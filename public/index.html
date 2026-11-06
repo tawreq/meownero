@@ -565,6 +565,7 @@ const FRAME = { s:1.25, ox:500-383*1.25, oy:100 };   // close-up of ghost.webp (
 const STEPS = [
   { key:"outfit", title:"Outfit", jp:"服", hint:"Pick the base look for the ghost." , items:[
       { id:"plain", label:"Plain", src:"ghost.webp", outline:"ghost-outline.webp" },
+      { id:"glossy-puffer", label:"Glossy Puffer", full:"outfit-puffer.webp" },
     ] },
   { key:"hat", title:"Hat", jp:"帽子", hint:"Drag the hat on the preview to place it.", at:{ x:500, y:150, w:440 }, items:[
       { id:"none", label:"No hat" },
@@ -618,7 +619,9 @@ function paint(c, size, opts = {}){
   c.fillStyle = PAPER; c.fillRect(0,0,1000,1000);
   c.fillStyle = "rgba(23,22,26,.07)"; for (let y=20;y<1000;y+=40) for (let x=20;x<1000;x+=40){ c.beginPath(); c.arc(x,y,2.2,0,7); c.fill(); }
   const outfit = STEPS[0].items.find(i => i.id === (opts.outfit || S.outfit)) || STEPS[0].items[0];
-  const base = getImg(outfit.src), outline = outfit.outline ? getImg(outfit.outline) : null;
+  const full = outfit.full ? getImg(outfit.full) : null;
+  if (full) { c.drawImage(full, 0, 0, 1000, 1000); }
+  const base = full ? null : getImg(outfit.src), outline = !full && outfit.outline ? getImg(outfit.outline) : null;
   if (base) {
     c.setTransform(k*FRAME.s,0,0,k*FRAME.s,k*FRAME.ox,k*FRAME.oy);
     c.save(); c.shadowColor = "rgba(40,20,0,.22)"; c.shadowBlur = 36*k; c.shadowOffsetY = 14*k; c.drawImage(outline || base, 0, 0, 756, 1561); c.restore();
