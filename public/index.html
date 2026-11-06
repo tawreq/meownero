@@ -547,14 +547,90 @@ function paw(c, x, y, s, col){ c.fillStyle = col; c.beginPath(); c.ellipse(x, y+
    - { src }  a transparent PNG/WebP the same size as ghost.webp (756 × 1561), drawn on top of the cat.
               Optional { x, y, w, h } place a smaller image in ghost.webp pixels instead.
    - { draw } a placeholder fabric printed onto the sheet (until real clothing art arrives). */
+/* ---- Original jackets, drawn in sheet space (756 × 1561) and printed onto the cloth ---- */
+const CX = 388, NY = 345;                  // body centre line, neckline at the chin
+const FACE = { x:390, y:222, rx:138, ry:142 }; // hood opening around the face holes
+function bodyClip(c){ c.beginPath(); c.moveTo(0,SH); c.lineTo(0,440); c.quadraticCurveTo(CX-150, NY-10, CX, NY); c.quadraticCurveTo(CX+150, NY-10, SW, 430); c.lineTo(SW,SH); c.closePath(); c.clip(); }
+function eraseHead(c, dy=0){ c.save(); c.globalCompositeOperation = "destination-out"; c.fillStyle = "#000"; c.beginPath(); c.moveTo(0,0); c.lineTo(SW,0); c.lineTo(SW,430+dy); c.quadraticCurveTo(CX+150, NY-10+dy, CX, NY+dy); c.quadraticCurveTo(CX-150, NY-10+dy, 0, 440+dy); c.closePath(); c.fill(); c.restore(); }
+function noise(c, alpha, seed, n=9000){ const r = rng(seed); for (let i=0;i<n;i++){ c.fillStyle = r()<.5 ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha})`; c.fillRect(r()*SW, r()*SH, 2, 2); } }
+function zipper(c, col, top=NY){ c.fillStyle = col; c.fillRect(CX-5, top, 10, SH-top); c.fillStyle = "rgba(0,0,0,.35)"; for (let y=top; y<SH; y+=9) c.fillRect(CX-6, y, 12, 3); c.fillStyle = col; rr(c, CX-11, top+18, 22, 46, 6); c.fill(); }
+function hoodRing(c, col, edge){ c.save(); c.globalCompositeOperation = "destination-out"; c.fillStyle = "#000"; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx, FACE.ry, 0, 0, 7); c.fill(); c.restore(); c.lineWidth = 30; c.strokeStyle = col; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx+12, FACE.ry+12, 0, 0, 7); c.stroke(); c.lineWidth = 4; c.strokeStyle = edge; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx+26, FACE.ry+26, 0, 0, 7); c.stroke(); }
+function strings(c, col, tip){ c.strokeStyle = col; c.lineWidth = 9; c.lineCap = "round"; for (const [x0,x1] of [[CX-38,CX-52],[CX+38,CX+50]]) { c.beginPath(); c.moveTo(x0, NY+6); c.quadraticCurveTo(x0-4, NY+90, x1, NY+180); c.stroke(); c.fillStyle = tip; rr(c, x1-7, NY+176, 14, 34, 5); c.fill(); } }
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function button(c, x, y, r, col){ const g = c.createRadialGradient(x-r*.3, y-r*.3, 1, x, y, r); g.addColorStop(0,"#FFFFFF"); g.addColorStop(1,col); c.fillStyle = g; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle="rgba(0,0,0,.35)"; c.lineWidth=2; c.stroke(); }
+
+const JACKETS = [
+  { id:"puffer", label:"Midnight Puffer", draw(c){
+      c.fillStyle = "#2B2B31"; c.fillRect(0,0,SW,SH);
+      // baffles: puffy horizontal channels with a soft sheen
+      for (let y=NY-260; y<SH; y+=86) { const g = c.createLinearGradient(0,y,0,y+86); g.addColorStop(0,"rgba(0,0,0,.45)"); g.addColorStop(.45,"rgba(255,255,255,.18)"); g.addColorStop(1,"rgba(0,0,0,.5)"); c.fillStyle = g; c.fillRect(0,y,SW,86); }
+      // tonal paw prints quilted into every other channel
+      for (let y=NY-217, row=0; y<SH; y+=172, row++) for (let x=(row%2?60:140); x<SW; x+=160) paw(c, x, y, 16, "rgba(255,255,255,.07)");
+      hoodRing(c, "#1E1E22", "rgba(255,255,255,.12)");
+      zipper(c, "#111114"); strings(c, "#121215", "#3A3A40");
+  } },
+  { id:"denim", label:"Denim Trucker", draw(c){
+      c.fillStyle = "#7FA6CF"; c.fillRect(0,0,SW,SH);
+      c.strokeStyle = "rgba(255,255,255,.10)"; c.lineWidth = 2; for (let x=-SH; x<SW; x+=7){ c.beginPath(); c.moveTo(x,0); c.lineTo(x+SH*.6,SH); c.stroke(); }
+      noise(c, .08, 5);
+      const g = c.createRadialGradient(CX, 700, 60, CX, 700, 520); g.addColorStop(0,"rgba(255,255,255,.22)"); g.addColorStop(1,"rgba(255,255,255,0)"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
+      eraseHead(c, 0);
+      c.save(); bodyClip(c);
+      const stitch = (path) => { c.strokeStyle = "#E7B36A"; c.lineWidth = 3; c.setLineDash([9,6]); path(); c.stroke(); c.setLineDash([]); };
+      stitch(() => { c.beginPath(); c.moveTo(0,470); c.quadraticCurveTo(CX, 520, SW, 460); });                  // yoke seam
+      for (const s of [-1,1]) { const px = CX + s*145; c.fillStyle = "rgba(40,70,110,.25)"; rr(c, px-62, 500, 124, 120, 10); c.fill(); stitch(() => rr(c, px-56, 506, 112, 108, 8)); c.fillStyle = "#6E95BF"; rr(c, px-66, 494, 132, 46, 10); c.fill(); stitch(() => rr(c, px-60, 500, 120, 34, 8)); button(c, px, 524, 9, "#B9BEC6"); }
+      c.fillStyle = "rgba(40,70,110,.25)"; c.fillRect(CX-24, NY, 48, SH);  stitch(() => { c.beginPath(); c.moveTo(CX-20,NY+40); c.lineTo(CX-20,SH); c.moveTo(CX+20,NY+40); c.lineTo(CX+20,SH); });
+      for (let y=NY+70; y<SH; y+=118) button(c, CX, y, 12, "#B9BEC6");
+      catHead(c, CX+150, 690, 20, "#FA691D");                                                              // small orange patch
+      c.restore();
+      // pointed collar
+      c.fillStyle = "#6F98C4"; for (const s of [-1,1]) { c.beginPath(); c.moveTo(CX + s*8, NY-6); c.lineTo(CX + s*170, NY-24); c.lineTo(CX + s*92, NY+118); c.closePath(); c.fill(); c.strokeStyle = "#E7B36A"; c.lineWidth = 3; c.setLineDash([9,6]); c.stroke(); c.setLineDash([]); }
+  } },
+  { id:"hoodie", label:"Cat Monogram Hoodie", draw(c){
+      c.fillStyle = "#E9762B"; c.fillRect(0,0,SW,SH);
+      const t = 110; for (let row=0, y=NY-330; y<SH+t; y+=t*.62, row++) for (let x=(row%2? t/2:0)-t; x<SW+t; x+=t) { if (row%2) catHead(c, x, y, 26, "#F6C9A0"); else { c.fillStyle = "#F6C9A0"; for (const [dx,dy] of [[-10,0],[10,0],[0,-10],[0,10]]) { c.beginPath(); c.arc(x+dx, y+dy, 4, 0, 7); c.fill(); } } }
+      // ribbed cuffs and hem bands live below the frame; the hood and zip carry the look
+      hoodRing(c, "#C95A1A", "rgba(255,255,255,.25)");
+      zipper(c, "#FBF4EA"); strings(c, "#FBF4EA", "#D8D2C8");
+  } },
+  { id:"bomber", label:"Olive Bomber", draw(c){
+      c.fillStyle = "#7D8F6A"; c.fillRect(0,0,SW,SH);
+      c.strokeStyle = "rgba(30,40,20,.25)"; c.lineWidth = 3; for (let x=-SH; x<SW+SH; x+=64){ c.beginPath(); c.moveTo(x,0); c.lineTo(x+SH,SH); c.stroke(); c.beginPath(); c.moveTo(x,0); c.lineTo(x-SH,SH); c.stroke(); }
+      const g = c.createLinearGradient(0,0,SW,0); g.addColorStop(0,"rgba(0,0,0,.18)"); g.addColorStop(.5,"rgba(255,255,255,.12)"); g.addColorStop(1,"rgba(0,0,0,.18)"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
+      eraseHead(c, -6);
+      // ribbed collar with stripes
+      for (const [w,col] of [[56,"#5E6B4E"],[40,"#E9E4D6"],[30,"#4B6A2E"],[16,"#E9E4D6"]]) { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(CX-190, NY+70); c.quadraticCurveTo(CX, NY-40, CX+190, NY+60); c.stroke(); }
+      c.strokeStyle = "rgba(0,0,0,.18)"; c.lineWidth = 2; for (let i=-180; i<=180; i+=10) { c.beginPath(); c.moveTo(CX+i, NY+10 + Math.abs(i)*.3 - 26); c.lineTo(CX+i, NY+10 + Math.abs(i)*.3 + 26); c.stroke(); }
+      c.fillStyle = "rgba(30,40,20,.25)"; c.fillRect(CX-3, NY+30, 6, SH);
+      for (let y=NY+90; y<SH; y+=112) button(c, CX+26, y, 13, "#8A6B3E");
+  } },
+  { id:"track", label:"Track Jacket", draw(c){
+      c.fillStyle = "#EDE7DC"; c.fillRect(0,0,SW,SH);
+      c.fillStyle = "#1F2A44"; c.beginPath(); c.moveTo(0,0); c.lineTo(SW,0); c.lineTo(SW,420); c.lineTo(0,640); c.closePath(); c.fill();   // asymmetric diagonal split
+      c.strokeStyle = "#FA691D"; c.lineWidth = 16; c.beginPath(); c.moveTo(0,650); c.lineTo(SW,430); c.stroke();
+      c.strokeStyle = "#FFFFFF"; c.lineWidth = 4; c.beginPath(); c.moveTo(0,670); c.lineTo(SW,450); c.stroke();
+      eraseHead(c, -30);
+      // stand collar
+      c.fillStyle = "#1F2A44"; c.beginPath(); c.moveTo(CX-150, NY+30); c.quadraticCurveTo(CX, NY-70, CX+150, NY+20); c.lineTo(CX+150, NY+60); c.quadraticCurveTo(CX, NY-20, CX-150, NY+70); c.closePath(); c.fill();
+      c.strokeStyle = "#FA691D"; c.lineWidth = 5; c.beginPath(); c.moveTo(CX-150, NY+50); c.quadraticCurveTo(CX, NY-45, CX+150, NY+40); c.stroke();
+      zipper(c, "#C9CCD3", NY-10);
+      // chest badge: katakana mi in a circle
+      c.fillStyle = "#FA691D"; c.beginPath(); c.arc(CX+150, NY+150, 38, 0, 7); c.fill(); c.strokeStyle = "#FFFFFF"; c.lineWidth = 7; c.lineCap = "round"; for (const [y,w] of [[-14,30],[0,34],[15,38]]) { c.beginPath(); c.moveTo(CX+150-w/2, NY+150+y-4); c.lineTo(CX+150+w/2, NY+150+y+4); c.stroke(); }
+  } },
+  { id:"windbreaker", label:"Windbreaker", draw(c){
+      c.fillStyle = "#F07A2C"; c.fillRect(0,0,SW,SH);
+      c.fillStyle = "#FBF6EE"; c.fillRect(0, 470, SW, 150);                                              // colour-block chest band
+      c.strokeStyle = "rgba(0,0,0,.08)"; c.lineWidth = 1.5; for (let x=0; x<SW; x+=16){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,SH); c.stroke(); } for (let y=0; y<SH; y+=16){ c.beginPath(); c.moveTo(0,y); c.lineTo(SW,y); c.stroke(); }
+      const g = c.createLinearGradient(0,0,SW,SH); g.addColorStop(0,"rgba(255,255,255,.22)"); g.addColorStop(.5,"rgba(255,255,255,0)"); g.addColorStop(1,"rgba(0,0,0,.12)"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
+      hoodRing(c, "#D9601C", "rgba(255,255,255,.3)");
+      zipper(c, "#FBF6EE"); strings(c, "#FBF6EE", "#E2DDD4");
+      paw(c, CX-150, 545, 26, "#F07A2C");
+  } },
+];
+
 const CLOTHES = [
   { id:"none", label:"No outfit" },
-  { id:"monogram", label:"Monogram", placeholder:true, draw(c){ c.fillStyle="#FBE6D2"; c.fillRect(0,0,SW,SH); const t=96; for(let row=0, y=0; y<SH+t; y+=t, row++) for(let x=(row%2? t/2:0)-t; x<SW+t; x+=t){ if ((row + Math.round(x/t)) % 2) catHead(c, x, y, 20, "#E5641F"); else paw(c, x, y, 17, "#B4501A"); } } },
-  { id:"puffer", label:"Puffer", placeholder:true, draw(c){ const h=112; for(let y=-20; y<SH; y+=h){ const g=c.createLinearGradient(0,y,0,y+h); g.addColorStop(0,"#B9470C"); g.addColorStop(.38,"#FF9A55"); g.addColorStop(.55,"#FFB27A"); g.addColorStop(1,"#C8520F"); c.fillStyle=g; c.fillRect(0,y,SW,h); c.fillStyle="#8E3507"; c.fillRect(0,y+h-5,SW,5); } c.fillStyle="rgba(255,255,255,.35)"; for(let y=-20; y<SH; y+=h){ c.beginPath(); c.ellipse(SW*.4, y+h*.42, SW*.28, 7, 0, 0, 7); c.fill(); } } },
-  { id:"tartan", label:"Tartan", placeholder:true, draw(c){ c.fillStyle="#F3E4CC"; c.fillRect(0,0,SW,SH); const P=200; for (const [off,w,col] of [[0,64,"rgba(23,22,26,.55)"],[110,40,"rgba(250,105,29,.75)"],[160,6,"rgba(23,22,26,.8)"],[176,6,"rgba(23,22,26,.8)"]]) { c.fillStyle=col; for(let x=off-P; x<SW+P; x+=P) c.fillRect(x,0,w,SH); for(let y=off-P; y<SH+P; y+=P) c.fillRect(0,y,SW,w); } } },
-  { id:"gingham", label:"Gingham", placeholder:true, draw(c){ c.fillStyle="#FFFFFF"; c.fillRect(0,0,SW,SH); c.fillStyle="rgba(250,105,29,.5)"; const s=44; for(let x=0;x<SW;x+=s*2) c.fillRect(x,0,s,SH); for(let y=0;y<SH;y+=s*2) c.fillRect(0,y,SW,s); } },
-  { id:"pinstripe", label:"Pinstripe", placeholder:true, draw(c){ c.fillStyle="#2B2A31"; c.fillRect(0,0,SW,SH); c.fillStyle="rgba(255,255,255,.6)"; for(let x=10;x<SW;x+=46) c.fillRect(x,0,3,SH); c.fillStyle="rgba(250,105,29,.55)"; for(let x=33;x<SW;x+=92) c.fillRect(x,0,2,SH); } },
-  { id:"camo", label:"Orange camo", placeholder:true, draw(c){ c.fillStyle="#F7B37C"; c.fillRect(0,0,SW,SH); const r=rng(11); for (const col of ["#E8722C","#B44D14","#5C2A10"]) { c.fillStyle=col; for(let i=0;i<70;i++){ const x=r()*SW, y=r()*SH, s=30+r()*60; c.beginPath(); for(let k=0;k<9;k++){ const a=k/9*Math.PI*2, rr2=s*(.6+r()*.6); c[k?"lineTo":"moveTo"](x+Math.cos(a)*rr2, y+Math.sin(a)*rr2*.7); } c.closePath(); c.fill(); } } } },
+  ...JACKETS,
 ];
 
 const layerCache = {};
@@ -575,7 +651,7 @@ function clothingLayer(item){
 }
 
 let current = "none";
-try { const saved = localStorage.getItem("mnero-outfit"); if (CLOTHES.some(c => c.id === saved)) current = saved; } catch(e){}
+try { const saved = localStorage.getItem("mnero-outfit2"); if (CLOTHES.some(c => c.id === saved)) current = saved; } catch(e){}
 
 function paint(c, item, size){
   const k = size / 1000;
@@ -606,11 +682,11 @@ for (const item of CLOTHES) {
   const b = el("button",{className:"outfit",type:"button"}); b.dataset.id = item.id; b.setAttribute("role","radio");
   const t = document.createElement("canvas"); t.width = t.height = 240; thumbs[item.id] = t;
   b.append(t, el("span",{textContent:item.label}));
-  b.addEventListener("click", () => { current = item.id; try { localStorage.setItem("mnero-outfit", current); } catch(e){} sync(); });
+  b.addEventListener("click", () => { current = item.id; try { localStorage.setItem("mnero-outfit2", current); } catch(e){} sync(); });
   grid.append(b);
 }
 group.append(grid);
-const note = el("p",{className:"hint",textContent:"Placeholder outfits for now. The real clothing collection is coming soon."});
+const note = el("p",{className:"hint",textContent:"More outfits coming soon."});
 group.append(note);
 panel.append(group);
 // Close-up crop for thumbnails: the head and shoulders.
@@ -622,7 +698,6 @@ function refreshThumb(id){
 function refreshThumbs(){ for (const item of CLOTHES) refreshThumb(item.id); }
 function sync(){
   grid.querySelectorAll(".outfit").forEach(b => { const on = b.dataset.id === current; b.setAttribute("aria-checked", String(on)); b.setAttribute("aria-pressed", String(on)); });
-  note.hidden = !CLOTHES.some(c => c.placeholder);
   draw();
 }
 
