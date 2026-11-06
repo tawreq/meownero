@@ -154,6 +154,12 @@ dialog.lb::backdrop{background:rgba(23,22,26,.82)}
 .group{display:grid;gap:10px;min-width:0}
 .group h4{margin:0;font:700 13px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);display:flex;justify-content:space-between;gap:8px}
 .group h4 em{font-style:normal;font-family:var(--display);font-weight:400;letter-spacing:.04em;color:var(--orange);text-transform:none}
+.clothes{display:grid;grid-template-columns:repeat(auto-fill,minmax(112px,1fr));gap:12px}
+.outfit{display:grid;gap:0;padding:0;border:2px solid var(--ink);border-radius:14px;overflow:hidden;background:var(--card);cursor:pointer;text-align:left;transition:transform .12s,box-shadow .12s}
+.outfit:hover{transform:translate(-2px,-2px);box-shadow:4px 4px 0 var(--ink)}
+.outfit[aria-pressed="true"]{box-shadow:0 0 0 3px var(--paper-2),0 0 0 6px var(--orange)}
+.outfit canvas{display:block;width:100%;aspect-ratio:1/1;height:auto;max-width:100%}
+.outfit span{font:500 13px/1.2 var(--body);padding:8px 10px;border-top:2px solid var(--ink)}
 .swatches{display:flex;flex-wrap:wrap;gap:10px}
 .sw{width:52px;height:52px;border-radius:12px;border:2px solid var(--ink);cursor:pointer;padding:0;position:relative;background-size:cover;background-position:center}
 .sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--paper-2),0 0 0 6px var(--orange)}
@@ -268,7 +274,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
         <div>
           <p class="kicker" lang="ja">プロフィール画像</p>
           <h2 id="pfp-h">PFP Generator</h2>
-          <p class="sec-sub">Dress the ghost, pick a sheet and a background, add a caption, and save a 1000 × 1000 PNG ready for X.</p>
+          <p class="sec-sub">Pick an outfit for the ghost and save a 1000 × 1000 PNG ready for X.</p>
         </div>
       </div>
       <div class="studio">
@@ -276,8 +282,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
           <div class="canvas-frame" id="frame"><canvas id="cv" width="1000" height="1000" role="img" aria-label="Your Meownero profile picture preview"></canvas></div>
           <div class="stage-actions">
             <button class="btn primary" id="save-btn">Save PNG</button>
-            <button class="btn" id="rand-btn">Randomize</button>
-            <button class="btn" id="reset-btn">Reset</button>
+            <button class="btn" id="rand-btn">Surprise me</button>
           </div>
           <div class="save-out" id="save-out" hidden></div>
         </div>
@@ -414,7 +419,7 @@ function openLightbox(m){
   $("#lb-cap").textContent = [m.caption, handle && "by @"+handle].filter(Boolean).join(" · ");
   const xurl = safeXUrl(m.xUrl) || (handle ? "https://x.com/"+handle : null);
   const src = $("#lb-src"); src.hidden = !xurl; if (xurl) src.href = xurl;
-  $("#lb-bg").hidden = m.kind !== "image";
+  $("#lb-bg").hidden = true;
   lb.showModal();
 }
 function closeLightbox(){ const v = $("#lb-media video"); if (v) v.pause(); lb.close(); }
@@ -525,220 +530,132 @@ if (adminKey) api({ action:"check" }).then(() => showAdmin(true)).catch(() => { 
 if (location.hash === "#admin") openLogin();
 
 /* =========================================================
-   PFP GENERATOR
+   PFP GENERATOR: one section, clothes layered over the ghost cat
    ========================================================= */
 const cv = $("#cv"), ctx = cv.getContext("2d");
 const ORANGE = "#FA691D", INK = "#17161A", PAPER = "#F7F6F3";
-const imgGhost = new Image(), imgOutline = new Image();
-imgGhost.src = "ghost.webp"; imgOutline.src = "ghost-outline.webp";
-let customBg = null;
+const SW = 756, SH = 1561;                       // ghost.webp size: clothes images use the same canvas
+const FRAME = { s:1.25, ox:500-383*1.25, oy:100 }; // close-up framing
+const imgGhost = new Image(), imgOutline = new Image(), imgMask = new Image();
+imgGhost.src = "ghost.webp"; imgOutline.src = "ghost-outline.webp"; imgMask.src = "sheet-mask.webp";
 
-/* Cat-space landmarks (ghost.webp pixels, 756 × 1561) */
-const EYE_L = [313,184], EYE_R = [458,174];
-const EYE_C = [(EYE_L[0]+EYE_R[0])/2, (EYE_L[1]+EYE_R[1])/2];
-const EYE_A = Math.atan2(EYE_R[1]-EYE_L[1], EYE_R[0]-EYE_L[0]);
-const EYE_D = Math.hypot(EYE_R[0]-EYE_L[0], EYE_R[1]-EYE_L[1]) / 2;
-const MOUTH = [398,268], CHEST = [398,372];
-
-const FRAMES = {
-  bust: { label:"Close-up", s:1.25, ox:500-383*1.25, oy:100 },
-  full: { label:"Full body", s:0.58, ox:500-378*0.58, oy:62 },
-};
-
-function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function rng(seed){ let s = seed; return () => (s = (s*1664525 + 1013904223) >>> 0) / 4294967296; }
-
-const BGS = {
-  paper: { label:"Paper", draw(c){ c.fillStyle=PAPER; c.fillRect(0,0,1000,1000); c.fillStyle="rgba(23,22,26,.07)"; for(let y=20;y<1000;y+=40) for(let x=20;x<1000;x+=40){ c.beginPath(); c.arc(x,y,2.2,0,7); c.fill(); } } },
-  orange: { label:"Orange", draw(c){ const g=c.createRadialGradient(500,420,60,500,500,760); g.addColorStop(0,"#FF8B4A"); g.addColorStop(1,"#E8560E"); c.fillStyle=g; c.fillRect(0,0,1000,1000); } },
-  ink: { label:"Ink", draw(c){ c.fillStyle=INK; c.fillRect(0,0,1000,1000); const g=c.createRadialGradient(500,380,40,500,420,560); g.addColorStop(0,"rgba(250,105,29,.45)"); g.addColorStop(1,"rgba(250,105,29,0)"); c.fillStyle=g; c.fillRect(0,0,1000,1000); } },
-  sakura: { label:"Sakura", draw(c){ c.fillStyle="#F6CDD3"; c.fillRect(0,0,1000,1000); const r=rng(7); for(let i=0;i<26;i++){ const x=r()*1000,y=r()*1000,s=10+r()*14,a=r()*6.3; c.save(); c.translate(x,y); c.rotate(a); c.fillStyle=`rgba(255,255,255,${.35+r()*.35})`; c.beginPath(); c.ellipse(0,0,s,s*.6,0,0,7); c.fill(); c.restore(); } } },
-  kanji: { label:"Katakana", draw(c){ c.fillStyle=PAPER; c.fillRect(0,0,1000,1000); c.save(); c.translate(500,500); c.rotate(-0.17); c.font='118px "Dela Gothic One", sans-serif'; c.fillStyle="rgba(250,105,29,.17)"; c.textBaseline="middle"; for(let row=-6;row<=6;row++){ c.fillText("ミャウネロミャウネロ", -1100 + (row%2?120:0), row*150); } c.restore(); } },
-  burst: { label:"Sunburst", draw(c){ c.fillStyle="#FF8A45"; c.fillRect(0,0,1000,1000); c.save(); c.translate(500,430); c.fillStyle=ORANGE; const n=22; for(let i=0;i<n;i++){ const a0=i/n*Math.PI*2, a1=(i+.5)/n*Math.PI*2; c.beginPath(); c.moveTo(0,0); c.lineTo(Math.cos(a0)*1200,Math.sin(a0)*1200); c.lineTo(Math.cos(a1)*1200,Math.sin(a1)*1200); c.closePath(); c.fill(); } c.restore(); } },
-  night: { label:"Night", draw(c){ const g=c.createLinearGradient(0,0,0,1000); g.addColorStop(0,"#0E1330"); g.addColorStop(1,"#2B2150"); c.fillStyle=g; c.fillRect(0,0,1000,1000); const r=rng(42); for(let i=0;i<90;i++){ c.fillStyle=`rgba(255,255,255,${.3+r()*.7})`; c.beginPath(); c.arc(r()*1000,r()*1000,.8+r()*2.2,0,7); c.fill(); } c.save(); c.shadowColor="rgba(255,226,170,.6)"; c.shadowBlur=60; c.fillStyle="#FFE7B5"; c.beginPath(); c.arc(820,170,82,0,7); c.fill(); c.restore(); c.fillStyle="rgba(220,190,140,.35)"; [[795,150,16],[845,195,11],[830,140,7]].forEach(([x,y,r])=>{c.beginPath();c.arc(x,y,r,0,7);c.fill();}); } },
-  secret: { label:"Secret", draw(c){ c.fillStyle=ORANGE; c.fillRect(0,0,1000,1000); c.save(); c.translate(500,500); c.rotate(-0.35); c.font='54px "Dela Gothic One", sans-serif'; c.textBaseline="middle"; for(let row=-12;row<=12;row++){ c.fillStyle = row%2 ? "rgba(255,255,255,.16)" : "rgba(23,22,26,.12)"; c.fillText("ひみつ SECRET ひみつ SECRET ひみつ SECRET ひみつ SECRET", -1300 + (row%2?140:0), row*78); } c.restore(); } },
-};
-
-/* ---- Accessory drawers (cat space) ---- */
-function eyesFrame(c, fn){ c.save(); c.translate(EYE_C[0],EYE_C[1]); c.rotate(EYE_A); fn(c, EYE_D); c.restore(); }
-const EYES = {
-  none:{label:"None", draw(){}},
-  shades:{label:"Shades", draw(c){ eyesFrame(c,(c,d)=>{ c.fillStyle="#0E0E10"; rr(c,-d-64,-36,128,70,30); c.fill(); rr(c,d-64,-36,128,70,30); c.fill(); c.fillRect(-20,-30,40,11); c.lineWidth=10; c.strokeStyle="#0E0E10"; c.beginPath(); c.moveTo(-d-64,-18); c.lineTo(-d-150,-34); c.moveTo(d+64,-18); c.lineTo(d+150,-34); c.stroke(); c.fillStyle="rgba(255,255,255,.18)"; c.beginPath(); c.ellipse(-d-26,-16,26,8,-.3,0,7); c.fill(); c.beginPath(); c.ellipse(d-26,-16,26,8,-.3,0,7); c.fill(); }); }},
-  pixel:{label:"Pixel shades", draw(c){ eyesFrame(c,(c,d)=>{ const u=15, x0=-11*u, y0=-2*u; const rows=["1111111111111111111111","0111111100001111111100","0011111100000111111000","0001111000000011110000"]; const hi={ "1,2":1,"1,3":1,"2,3":1,"1,13":1,"1,14":1,"2,14":1}; rows.forEach((r,ri)=>{ [...r].forEach((ch,ci)=>{ if(ch==="1"){ c.fillStyle = hi[ri+","+ci] ? "#FFFFFF" : "#0B0B0D"; c.fillRect(x0+ci*u,y0+ri*u,u+.5,u+.5); } }); }); }); }},
-  laser:{label:"Laser eyes", draw(c){ eyesFrame(c,(c,d)=>{ c.save(); c.globalCompositeOperation="lighter"; for(const side of [-1,1]){ const ex=side*d; const ang = side<0 ? Math.PI+0.18 : -0.18; c.save(); c.translate(ex,0); c.rotate(ang); const g=c.createLinearGradient(0,0,1400,0); g.addColorStop(0,"rgba(255,60,40,.95)"); g.addColorStop(1,"rgba(255,60,40,0)"); c.fillStyle=g; c.beginPath(); c.moveTo(0,-10); c.lineTo(1400,-70); c.lineTo(1400,70); c.lineTo(0,10); c.closePath(); c.fill(); c.fillStyle="rgba(255,240,220,.9)"; c.beginPath(); c.moveTo(0,-3); c.lineTo(900,-12); c.lineTo(900,12); c.lineTo(0,3); c.closePath(); c.fill(); c.restore(); const rg=c.createRadialGradient(ex,0,0,ex,0,70); rg.addColorStop(0,"rgba(255,255,255,1)"); rg.addColorStop(.25,"rgba(255,80,50,.95)"); rg.addColorStop(1,"rgba(255,40,20,0)"); c.fillStyle=rg; c.beginPath(); c.arc(ex,0,70,0,7); c.fill(); } c.restore(); }); }},
-  specs:{label:"Round specs", draw(c){ eyesFrame(c,(c,d)=>{ c.lineWidth=8; c.strokeStyle="#3A2416"; c.fillStyle="rgba(255,255,255,.12)"; for(const s of [-1,1]){ c.beginPath(); c.arc(s*d,0,50,0,7); c.fill(); c.stroke(); } c.beginPath(); c.moveTo(-d+50,-6); c.quadraticCurveTo(0,-26,d-50,-6); c.stroke(); c.beginPath(); c.moveTo(-d-50,-4); c.lineTo(-d-120,-16); c.moveTo(d+50,-4); c.lineTo(d+120,-16); c.stroke(); }); }},
-  monocle:{label:"Monocle", draw(c){ eyesFrame(c,(c,d)=>{ c.fillStyle="rgba(255,255,255,.14)"; c.strokeStyle="#C8961E"; c.lineWidth=10; c.beginPath(); c.arc(d,0,54,0,7); c.fill(); c.stroke(); c.lineWidth=4; c.setLineDash([9,6]); c.beginPath(); c.moveTo(d+40,38); c.bezierCurveTo(d+90,140,d+40,220,d+70,300); c.stroke(); c.setLineDash([]); }); }},
-};
-const HEADS = {
-  none:{label:"None", draw(){}},
-  party:{label:"Party hat", draw(c){ c.save(); c.beginPath(); c.moveTo(286,92); c.lineTo(458,82); c.lineTo(388,-160); c.closePath(); c.save(); c.clip(); c.fillStyle=ORANGE; c.fillRect(200,-200,350,320); c.strokeStyle="#FFFFFF"; c.lineWidth=20; for(let i=-6;i<8;i++){ c.beginPath(); c.moveTo(200,-60+i*42); c.lineTo(560,-140+i*42); c.stroke(); } c.restore(); c.lineWidth=6; c.strokeStyle=INK; c.beginPath(); c.moveTo(286,92); c.lineTo(458,82); c.lineTo(388,-160); c.closePath(); c.stroke(); c.fillStyle="#FFFFFF"; c.beginPath(); c.arc(388,-166,26,0,7); c.fill(); c.stroke(); c.restore(); }},
-  crown:{label:"Crown", draw(c){ c.save(); const g=c.createLinearGradient(0,-40,0,100); g.addColorStop(0,"#FFE07A"); g.addColorStop(1,"#D79A12"); c.fillStyle=g; c.strokeStyle="#8A5A06"; c.lineWidth=6; c.beginPath(); c.moveTo(262,96); c.lineTo(250,-10); c.lineTo(305,40); c.lineTo(338,-42); c.lineTo(372,28); c.lineTo(406,-42); c.lineTo(440,40); c.lineTo(494,-10); c.lineTo(482,90); c.quadraticCurveTo(372,72,262,96); c.closePath(); c.fill(); c.stroke(); [[338,-42,"#E2412B"],[406,-42,"#E2412B"],[250,-10,"#2AA6A1"],[494,-10,"#2AA6A1"]].forEach(([x,y,col])=>{ c.fillStyle=col; c.beginPath(); c.arc(x,y,11,0,7); c.fill(); c.stroke(); }); c.fillStyle=ORANGE; c.beginPath(); c.arc(372,62,14,0,7); c.fill(); c.stroke(); c.restore(); }},
-  halo:{label:"Halo", draw(c){ c.save(); c.shadowColor="rgba(255,214,90,.9)"; c.shadowBlur=40; c.strokeStyle="#FFD45A"; c.lineWidth=16; c.beginPath(); c.ellipse(372,-46,140,32,-.04,0,7); c.stroke(); c.shadowBlur=0; c.strokeStyle="#FFF4C2"; c.lineWidth=4; c.beginPath(); c.ellipse(372,-46,140,32,-.04,0,7); c.stroke(); c.restore(); }},
-  band:{label:"Headband", draw(c){ c.save(); c.fillStyle=ORANGE; c.strokeStyle=INK; c.lineWidth=5; c.beginPath(); c.moveTo(168,104); c.quadraticCurveTo(372,70,590,92); c.lineTo(590,126); c.quadraticCurveTo(372,104,170,138); c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.moveTo(580,100); c.quadraticCurveTo(660,90,700,40); c.lineTo(716,62); c.quadraticCurveTo(672,116,584,122); c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.moveTo(584,110); c.quadraticCurveTo(680,140,712,120); c.lineTo(708,148); c.quadraticCurveTo(660,160,582,124); c.closePath(); c.fill(); c.stroke(); c.font='30px "Dela Gothic One", sans-serif'; c.fillStyle="#FFFFFF"; c.textAlign="center"; c.textBaseline="middle"; c.translate(380,104); c.rotate(-0.03); c.fillText("ひみつ", 0, 2); c.restore(); }},
-  tophat:{label:"Top hat", draw(c){ c.save(); c.fillStyle="#141317"; c.beginPath(); c.moveTo(296,84); c.lineTo(286,-150); c.quadraticCurveTo(372,-170,458,-150); c.lineTo(448,82); c.closePath(); c.fill(); c.fillStyle=ORANGE; c.beginPath(); c.moveTo(294,40); c.quadraticCurveTo(372,26,450,40); c.lineTo(449,74); c.quadraticCurveTo(372,60,295,74); c.closePath(); c.fill(); c.fillStyle="#141317"; c.beginPath(); c.ellipse(372,86,158,24,-.02,0,7); c.fill(); c.fillStyle="rgba(255,255,255,.08)"; c.fillRect(300,-140,22,170); c.restore(); }},
-  bow:{label:"Ear bow", draw(c){ c.save(); c.translate(486,82); c.rotate(.35); c.fillStyle="#FF6FA0"; c.strokeStyle=INK; c.lineWidth=5; for(const s of [-1,1]){ c.beginPath(); c.moveTo(0,0); c.bezierCurveTo(s*40,-60,s*95,-40,s*82,0); c.bezierCurveTo(s*95,40,s*40,60,0,0); c.closePath(); c.fill(); c.stroke(); } c.beginPath(); c.arc(0,0,17,0,7); c.fill(); c.stroke(); c.restore(); }},
-};
-const NECKS = {
-  none:{label:"None", draw(){}},
-  bowtie:{label:"Bow tie", draw(c){ c.save(); c.translate(CHEST[0],CHEST[1]); c.fillStyle=INK; for(const s of [-1,1]){ c.beginPath(); c.moveTo(0,0); c.lineTo(s*76,-38); c.quadraticCurveTo(s*86,0,s*76,38); c.closePath(); c.fill(); } c.fillStyle=ORANGE; rr(c,-20,-20,40,40,10); c.fill(); c.restore(); }},
-  chain:{label:"Gold chain", draw(c){ c.save(); c.strokeStyle="#E3B23C"; c.lineWidth=12; c.lineCap="round"; c.setLineDash([16,10]); c.beginPath(); c.moveTo(232,326); c.quadraticCurveTo(398,560,560,316); c.stroke(); c.setLineDash([]); c.translate(398,452); c.fillStyle="#E3B23C"; c.beginPath(); c.arc(0,0,62,0,7); c.fill(); c.fillStyle=ORANGE; c.strokeStyle="#9C6A0C"; c.lineWidth=5; c.beginPath(); c.arc(0,0,50,0,7); c.fill(); c.stroke(); c.fillStyle="#FFFFFF"; c.font='48px "Dela Gothic One", sans-serif'; c.textAlign="center"; c.textBaseline="middle"; c.fillText("M",0,3); c.restore(); }},
-  scarf:{label:"Scarf", draw(c){ c.save(); c.fillStyle=ORANGE; c.strokeStyle=INK; c.lineWidth=5; c.beginPath(); c.moveTo(214,330); c.quadraticCurveTo(398,388,584,318); c.lineTo(592,376); c.quadraticCurveTo(398,452,206,388); c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.moveTo(470,380); c.lineTo(530,380); c.lineTo(548,560); c.lineTo(486,566); c.closePath(); c.fill(); c.stroke(); c.strokeStyle="rgba(255,255,255,.6)"; c.lineWidth=8; for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(476+i*4,440+i*40); c.lineTo(536+i*4,438+i*40); c.stroke(); } c.restore(); }},
-};
-
-/* ---- Sheet fabrics: drawn in sheet space, clipped to the cloth, multiplied over the folds ---- */
-const imgMask = new Image(); imgMask.src = "sheet-mask.webp";
-const SW = 756, SH = 1561;
 function catHead(c, x, y, s, col){ c.fillStyle = col; c.beginPath(); c.moveTo(x-s, y-s*.2); c.lineTo(x-s*.85, y-s*1.15); c.lineTo(x-s*.3, y-s*.75); c.lineTo(x+s*.3, y-s*.75); c.lineTo(x+s*.85, y-s*1.15); c.lineTo(x+s, y-s*.2); c.quadraticCurveTo(x+s, y+s*.8, x, y+s*.8); c.quadraticCurveTo(x-s, y+s*.8, x-s, y-s*.2); c.fill(); }
 function paw(c, x, y, s, col){ c.fillStyle = col; c.beginPath(); c.ellipse(x, y+s*.35, s*.55, s*.45, 0, 0, 7); c.fill(); for (const [dx,dy] of [[-.55,-.3],[-.2,-.62],[.2,-.62],[.55,-.3]]) { c.beginPath(); c.ellipse(x+dx*s, y+dy*s, s*.2, s*.24, 0, 0, 7); c.fill(); } }
-const FABRICS = {
-  plain:{ label:"Plain" },
-  monogram:{ label:"Monogram", draw(c){ c.fillStyle="#FBE6D2"; c.fillRect(0,0,SW,SH); const t=96; for(let row=0, y=0; y<SH+t; y+=t, row++) for(let x=(row%2? t/2:0)-t; x<SW+t; x+=t){ if ((row + Math.round(x/t)) % 2) catHead(c, x, y, 20, "#E5641F"); else paw(c, x, y, 17, "#B4501A"); } } },
-  puffer:{ label:"Puffer", draw(c){ const h=112; for(let y=-20; y<SH; y+=h){ const g=c.createLinearGradient(0,y,0,y+h); g.addColorStop(0,"#B9470C"); g.addColorStop(.38,"#FF9A55"); g.addColorStop(.55,"#FFB27A"); g.addColorStop(1,"#C8520F"); c.fillStyle=g; c.fillRect(0,y,SW,h); c.fillStyle="#8E3507"; c.fillRect(0,y+h-5,SW,5); } c.fillStyle="rgba(255,255,255,.35)"; for(let y=-20; y<SH; y+=h){ c.beginPath(); c.ellipse(SW*.4, y+h*.42, SW*.28, 7, 0, 0, 7); c.fill(); } } },
-  tartan:{ label:"Tartan", draw(c){ c.fillStyle="#F3E4CC"; c.fillRect(0,0,SW,SH); const P=200; for (const [off,w,col] of [[0,64,"rgba(23,22,26,.55)"],[110,40,"rgba(250,105,29,.75)"],[160,6,"rgba(23,22,26,.8)"],[176,6,"rgba(23,22,26,.8)"]]) { c.fillStyle=col; for(let x=off-P; x<SW+P; x+=P) c.fillRect(x,0,w,SH); for(let y=off-P; y<SH+P; y+=P) c.fillRect(0,y,SW,w); } } },
-  gingham:{ label:"Gingham", draw(c){ c.fillStyle="#FFFFFF"; c.fillRect(0,0,SW,SH); c.fillStyle="rgba(250,105,29,.5)"; const s=44; for(let x=0;x<SW;x+=s*2) c.fillRect(x,0,s,SH); for(let y=0;y<SH;y+=s*2) c.fillRect(0,y,SW,s); } },
-  pinstripe:{ label:"Pinstripe", draw(c){ c.fillStyle="#2B2A31"; c.fillRect(0,0,SW,SH); c.fillStyle="rgba(255,255,255,.6)"; for(let x=10;x<SW;x+=46) c.fillRect(x,0,3,SH); c.fillStyle="rgba(250,105,29,.55)"; for(let x=33;x<SW;x+=92) c.fillRect(x,0,2,SH); } },
-  camo:{ label:"Orange camo", draw(c){ c.fillStyle="#F7B37C"; c.fillRect(0,0,SW,SH); const r=rng(11); for (const col of ["#E8722C","#B44D14","#5C2A10"]) { c.fillStyle=col; for(let i=0;i<70;i++){ const x=r()*SW, y=r()*SH, s=30+r()*60; c.beginPath(); for(let k=0;k<9;k++){ const a=k/9*Math.PI*2, rr2=s*(.6+r()*.6); c[k?"lineTo":"moveTo"](x+Math.cos(a)*rr2, y+Math.sin(a)*rr2*.7); } c.closePath(); c.fill(); } } } },
-};
-const fabricCache = {};
-function fabricLayer(id){
-  const f = FABRICS[id];
-  if (!f || !f.draw || !imgMask.complete || !imgMask.naturalWidth) return null;
-  if (fabricCache[id]) return fabricCache[id];
-  const off = document.createElement("canvas"); off.width = SW; off.height = SH;
-  const c = off.getContext("2d"); f.draw(c);
-  c.globalCompositeOperation = "destination-in"; c.drawImage(imgMask, 0, 0);
-  return (fabricCache[id] = off);
+
+/* Clothes. Two kinds:
+   - { src }  a transparent PNG/WebP the same size as ghost.webp (756 × 1561), drawn on top of the cat.
+              Optional { x, y, w, h } place a smaller image in ghost.webp pixels instead.
+   - { draw } a placeholder fabric printed onto the sheet (until real clothing art arrives). */
+const CLOTHES = [
+  { id:"none", label:"No outfit" },
+  { id:"monogram", label:"Monogram", placeholder:true, draw(c){ c.fillStyle="#FBE6D2"; c.fillRect(0,0,SW,SH); const t=96; for(let row=0, y=0; y<SH+t; y+=t, row++) for(let x=(row%2? t/2:0)-t; x<SW+t; x+=t){ if ((row + Math.round(x/t)) % 2) catHead(c, x, y, 20, "#E5641F"); else paw(c, x, y, 17, "#B4501A"); } } },
+  { id:"puffer", label:"Puffer", placeholder:true, draw(c){ const h=112; for(let y=-20; y<SH; y+=h){ const g=c.createLinearGradient(0,y,0,y+h); g.addColorStop(0,"#B9470C"); g.addColorStop(.38,"#FF9A55"); g.addColorStop(.55,"#FFB27A"); g.addColorStop(1,"#C8520F"); c.fillStyle=g; c.fillRect(0,y,SW,h); c.fillStyle="#8E3507"; c.fillRect(0,y+h-5,SW,5); } c.fillStyle="rgba(255,255,255,.35)"; for(let y=-20; y<SH; y+=h){ c.beginPath(); c.ellipse(SW*.4, y+h*.42, SW*.28, 7, 0, 0, 7); c.fill(); } } },
+  { id:"tartan", label:"Tartan", placeholder:true, draw(c){ c.fillStyle="#F3E4CC"; c.fillRect(0,0,SW,SH); const P=200; for (const [off,w,col] of [[0,64,"rgba(23,22,26,.55)"],[110,40,"rgba(250,105,29,.75)"],[160,6,"rgba(23,22,26,.8)"],[176,6,"rgba(23,22,26,.8)"]]) { c.fillStyle=col; for(let x=off-P; x<SW+P; x+=P) c.fillRect(x,0,w,SH); for(let y=off-P; y<SH+P; y+=P) c.fillRect(0,y,SW,w); } } },
+  { id:"gingham", label:"Gingham", placeholder:true, draw(c){ c.fillStyle="#FFFFFF"; c.fillRect(0,0,SW,SH); c.fillStyle="rgba(250,105,29,.5)"; const s=44; for(let x=0;x<SW;x+=s*2) c.fillRect(x,0,s,SH); for(let y=0;y<SH;y+=s*2) c.fillRect(0,y,SW,s); } },
+  { id:"pinstripe", label:"Pinstripe", placeholder:true, draw(c){ c.fillStyle="#2B2A31"; c.fillRect(0,0,SW,SH); c.fillStyle="rgba(255,255,255,.6)"; for(let x=10;x<SW;x+=46) c.fillRect(x,0,3,SH); c.fillStyle="rgba(250,105,29,.55)"; for(let x=33;x<SW;x+=92) c.fillRect(x,0,2,SH); } },
+  { id:"camo", label:"Orange camo", placeholder:true, draw(c){ c.fillStyle="#F7B37C"; c.fillRect(0,0,SW,SH); const r=rng(11); for (const col of ["#E8722C","#B44D14","#5C2A10"]) { c.fillStyle=col; for(let i=0;i<70;i++){ const x=r()*SW, y=r()*SH, s=30+r()*60; c.beginPath(); for(let k=0;k<9;k++){ const a=k/9*Math.PI*2, rr2=s*(.6+r()*.6); c[k?"lineTo":"moveTo"](x+Math.cos(a)*rr2, y+Math.sin(a)*rr2*.7); } c.closePath(); c.fill(); } } } },
+];
+
+const layerCache = {};
+function clothingLayer(item){
+  if (!item || item.id === "none") return null;
+  if (layerCache[item.id]) return layerCache[item.id];
+  if (item.src) {
+    const img = new Image(); img.onload = () => { layerCache[item.id] = { img, ready:true }; draw(); refreshThumb(item.id); }; img.src = item.src;
+    return (layerCache[item.id] = { img, ready:false });
+  }
+  if (item.draw && imgMask.complete && imgMask.naturalWidth) {
+    const off = document.createElement("canvas"); off.width = SW; off.height = SH;
+    const c = off.getContext("2d"); item.draw(c);
+    c.globalCompositeOperation = "destination-in"; c.drawImage(imgMask, 0, 0);
+    return (layerCache[item.id] = { img: off, ready:true, fabric:true });
+  }
+  return null;
 }
 
-const DEFAULTS = { bg:"paper", fabric:"plain", head:"none", eyes:"none", neck:"none", outline:true, round:false, caption:"" };
-let S = { ...DEFAULTS };
-try { const saved = JSON.parse(localStorage.getItem("mnero-pfp") || "null"); if (saved && typeof saved === "object") for (const k of Object.keys(DEFAULTS)) if (k in saved && typeof saved[k] === typeof DEFAULTS[k]) S[k] = saved[k]; } catch(e){}
-if (S.bg === "custom") S.bg = "paper";
-function persist(){ try { localStorage.setItem("mnero-pfp", JSON.stringify(S)); } catch(e){} }
+let current = "none";
+try { const saved = localStorage.getItem("mnero-outfit"); if (CLOTHES.some(c => c.id === saved)) current = saved; } catch(e){}
 
-function drawCover(c, img){ const r = Math.max(1000/img.naturalWidth, 1000/img.naturalHeight); const w = img.naturalWidth*r, h = img.naturalHeight*r; c.drawImage(img, (1000-w)/2, (1000-h)/2, w, h); }
-
-function draw(){
-  const c = ctx;
-  c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,1000,1000);
-  if (S.bg === "custom" && customBg) drawCover(c, customBg); else (BGS[S.bg] || BGS.paper).draw(c);
-  if (imgGhost.complete && imgGhost.naturalWidth) {
-    const f = FRAMES.bust;
-    c.save(); c.setTransform(f.s,0,0,f.s,f.ox,f.oy);
-    c.save(); c.shadowColor="rgba(40,20,0,.22)"; c.shadowBlur=36; c.shadowOffsetY=14;
-    if (S.outline && imgOutline.complete) c.drawImage(imgOutline,0,0); else c.drawImage(imgGhost,0,0);
-    c.restore();
-    if (S.outline) c.drawImage(imgGhost,0,0);
-    const fab = fabricLayer(S.fabric);
-    if (fab) { c.save(); c.globalCompositeOperation = "multiply"; c.drawImage(fab,0,0); c.restore(); }
-    NECKS[S.neck].draw(c); EYES[S.eyes].draw(c); HEADS[S.head].draw(c);
-    c.restore();
+function paint(c, item, size){
+  const k = size / 1000;
+  c.setTransform(k,0,0,k,0,0);
+  c.fillStyle = PAPER; c.fillRect(0,0,1000,1000);
+  c.fillStyle = "rgba(23,22,26,.07)"; for(let y=20;y<1000;y+=40) for(let x=20;x<1000;x+=40){ c.beginPath(); c.arc(x,y,2.2,0,7); c.fill(); }
+  if (!(imgGhost.complete && imgGhost.naturalWidth)) return;
+  c.setTransform(k*FRAME.s,0,0,k*FRAME.s,k*FRAME.ox,k*FRAME.oy);
+  c.save(); c.shadowColor = "rgba(40,20,0,.22)"; c.shadowBlur = 36*k; c.shadowOffsetY = 14*k;
+  c.drawImage(imgOutline.complete && imgOutline.naturalWidth ? imgOutline : imgGhost, 0, 0); c.restore();
+  c.drawImage(imgGhost, 0, 0);
+  const layer = clothingLayer(item);
+  if (layer && layer.ready) {
+    if (layer.fabric) { c.save(); c.globalCompositeOperation = "multiply"; c.drawImage(layer.img, 0, 0); c.restore(); }
+    else c.drawImage(layer.img, item.x || 0, item.y || 0, item.w || SW, item.h || SH);
   }
   c.setTransform(1,0,0,1,0,0);
-  const cap = S.caption.trim();
-  if (cap) { c.save(); let size = 92; c.font=`${size}px "Dela Gothic One", sans-serif`; while (c.measureText(cap).width > 900 && size > 40) { size -= 4; c.font=`${size}px "Dela Gothic One", sans-serif`; } c.textAlign="center"; c.textBaseline="alphabetic"; c.lineJoin="round"; c.lineWidth=size*0.2; c.strokeStyle=INK; c.strokeText(cap,500,955); c.fillStyle="#FFFFFF"; c.fillText(cap,500,955); c.restore(); }
-  $("#frame").classList.toggle("round", S.round);
 }
+function draw(){ paint(ctx, CLOTHES.find(c => c.id === current), 1000); }
 
-/* ---- Controls ---- */
+/* ---- Clothes browser ---- */
 const panel = $("#panel");
-function chipGroup(title, jp, key, opts){
-  const g = el("div",{className:"group"});
-  const h = el("h4"); h.append(title, el("em",{textContent:jp,lang:"ja"})); g.append(h);
-  const row = el("div",{className:"chips",role:"group"}); row.setAttribute("aria-label", title);
-  for (const [id,o] of Object.entries(opts)) {
-    const b = el("button",{className:"chip",type:"button",textContent:o.label}); b.dataset.key = key; b.dataset.val = id;
-    b.addEventListener("click",()=>{ S[key] = id; sync(); });
-    row.append(b);
-  }
-  g.append(row); return g;
+const group = el("div",{className:"group"});
+const head = el("h4"); head.append("Clothes", el("em",{textContent:"服",lang:"ja"})); group.append(head);
+const grid = el("div",{className:"clothes",role:"radiogroup"}); grid.setAttribute("aria-label","Clothes");
+const thumbs = {};
+for (const item of CLOTHES) {
+  const b = el("button",{className:"outfit",type:"button"}); b.dataset.id = item.id; b.setAttribute("role","radio");
+  const t = document.createElement("canvas"); t.width = t.height = 240; thumbs[item.id] = t;
+  b.append(t, el("span",{textContent:item.label}));
+  b.addEventListener("click", () => { current = item.id; try { localStorage.setItem("mnero-outfit", current); } catch(e){} sync(); });
+  grid.append(b);
 }
-const bgGroup = el("div",{className:"group"});
-{ const h = el("h4"); h.append("Background", el("em",{textContent:"背景",lang:"ja"})); bgGroup.append(h);
-  const row = el("div",{className:"swatches",role:"group"}); row.setAttribute("aria-label","Background");
-  for (const [id,o] of Object.entries(BGS)) {
-    const b = el("button",{className:"sw",type:"button",title:o.label}); b.setAttribute("aria-label", o.label+" background");
-    const t = document.createElement("canvas"); t.width = t.height = 120; const tc0 = t.getContext("2d"); tc0.scale(.12,.12); o.draw(tc0);
-    b.dataset.bgid = id; b._thumb = t;
-    b.addEventListener("click",()=>{ S.bg = id; sync(); });
-    row.append(b);
-  }
-  const up = el("button",{className:"sw up",type:"button",textContent:"+",title:"Upload your own background"}); up.setAttribute("aria-label","Upload your own background"); up.dataset.bgid = "custom";
-  const upIn = el("input",{type:"file",accept:"image/*",hidden:true});
-  up.addEventListener("click",()=> customBg && S.bg !== "custom" ? (S.bg = "custom", sync()) : upIn.click());
-  up.addEventListener("dblclick",()=>upIn.click());
-  upIn.addEventListener("change",()=>{ const f = upIn.files[0]; if (!f) return; const img = new Image(); img.onload = () => setCustomBg(img); img.onerror = () => toast("That file couldn't be read as an image"); img.src = URL.createObjectURL(f); upIn.value=""; });
-  row.append(up, upIn); bgGroup.append(row);
+group.append(grid);
+const note = el("p",{className:"hint",textContent:"Placeholder outfits for now. The real clothing collection is coming soon."});
+group.append(note);
+panel.append(group);
+// Close-up crop for thumbnails: the head and shoulders.
+function refreshThumb(id){
+  const t = thumbs[id]; if (!t) return; const c = t.getContext("2d");
+  const big = document.createElement("canvas"); big.width = big.height = 1000; paint(big.getContext("2d"), CLOTHES.find(x => x.id === id), 1000);
+  c.clearRect(0,0,240,240); c.drawImage(big, 150, 40, 700, 700, 0, 0, 240, 240);
 }
-function paintSwatches(){ document.querySelectorAll(".sw[data-bgid]").forEach(b => { if (b._thumb) b.style.backgroundImage = `url(${b._thumb.toDataURL("image/png")})`; }); }
-function setCustomBg(img){ customBg = img; S.bg = "custom"; const up = document.querySelector('.sw[data-bgid="custom"]'); try { const t=document.createElement("canvas"); t.width=t.height=120; const tc=t.getContext("2d"); const r=Math.max(120/img.naturalWidth,120/img.naturalHeight); tc.drawImage(img,(120-img.naturalWidth*r)/2,(120-img.naturalHeight*r)/2,img.naturalWidth*r,img.naturalHeight*r); up.style.backgroundImage=`url(${t.toDataURL()})`; up.textContent=""; } catch(e){} sync(); }
-
-/* A meme from the depot becomes the PFP background */
-function useMemeAsPhoto(m){
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.onload = () => { setCustomBg(img); closeLightbox(); document.getElementById("pfp").scrollIntoView(); toast("Meme set as your PFP background"); };
-  img.onerror = () => toast("Couldn't load that image as a background");
-  img.src = srcFor(m);
-}
-
-panel.append(
-  bgGroup,
-  chipGroup("Sheet","布","fabric",FABRICS),
-  chipGroup("Headwear","帽子","head",HEADS),
-  chipGroup("Eyes","目","eyes",EYES),
-  chipGroup("Neck","首","neck",NECKS),
-);
-{ const g = el("div",{className:"group"}); const h = el("h4"); h.append("Caption", el("em",{textContent:"文字",lang:"ja"})); g.append(h);
-  const inp = el("input",{className:"cap-in",id:"cap-in",maxLength:24,placeholder:"gm, ghosts"}); inp.setAttribute("aria-label","Caption text"); inp.value = S.caption;
-  inp.addEventListener("input",()=>{ S.caption = inp.value; persist(); draw(); });
-  g.append(inp); panel.append(g); }
-{ const g = el("div",{className:"group"}); const h = el("h4"); h.append("Extras", el("em",{textContent:"その他",lang:"ja"})); g.append(h);
-  const row = el("div",{className:"toggles"});
-  [["outline","Sticker outline"],["round","Preview as circle"]].forEach(([k,label])=>{
-    const lab = el("label",{className:"tg"}); const cb = el("input",{type:"checkbox",id:"tg-"+k,checked:S[k]});
-    cb.addEventListener("change",()=>{ S[k] = cb.checked; sync(); });
-    lab.append(cb, label); row.append(lab);
-  });
-  g.append(row); panel.append(g); }
-
+function refreshThumbs(){ for (const item of CLOTHES) refreshThumb(item.id); }
 function sync(){
-  document.querySelectorAll(".chip[data-key]").forEach(b => b.setAttribute("aria-pressed", String(S[b.dataset.key] === b.dataset.val)));
-  document.querySelectorAll(".sw[data-bgid]").forEach(b => b.setAttribute("aria-pressed", String(S.bg === b.dataset.bgid)));
-  ["outline","round"].forEach(k => { const cb = $("#tg-"+k); if (cb) cb.checked = S[k]; });
-  persist(); draw();
+  grid.querySelectorAll(".outfit").forEach(b => { const on = b.dataset.id === current; b.setAttribute("aria-checked", String(on)); b.setAttribute("aria-pressed", String(on)); });
+  note.hidden = !CLOTHES.some(c => c.placeholder);
+  draw();
 }
 
-const pick = o => { const k = Object.keys(o); return k[Math.floor(Math.random()*k.length)]; };
-$("#rand-btn").addEventListener("click",()=>{ S.bg = pick(BGS); S.head = pick(HEADS); S.eyes = pick(EYES); S.fabric = Math.random()<.3 ? "plain" : pick(FABRICS); S.neck = Math.random()<.4 ? "none" : pick(NECKS); sync(); });
-$("#reset-btn").addEventListener("click",()=>{ S = { ...DEFAULTS }; $("#cap-in").value = ""; sync(); });
+/* A meme from the depot can't dress the cat; the lightbox button is hidden for now. */
+function useMemeAsPhoto(){}
+
+$("#rand-btn").addEventListener("click", () => {
+  const options = CLOTHES.filter(c => c.id !== "none" && c.id !== current);
+  if (!options.length) return;
+  current = options[Math.floor(Math.random()*options.length)].id; sync();
+});
 
 $("#save-btn").addEventListener("click", async () => {
   draw();
   const blob = await new Promise(r => cv.toBlob(r, "image/png"));
   if (!blob) { toast("Couldn't create the image. Try again."); return; }
   const out = $("#save-out");
-  try {
-    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "meownero-pfp.png";
-    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
-    out.hidden = true; return;
-  } catch (e) {}
+  const dl = window.claude && window.claude.use ? await window.claude.use("downloads").catch(() => null) : null;
+  if (dl) {
+    try { await dl.save({ filename: "meownero-pfp.png", data: blob }); out.hidden = true; return; }
+    catch (e) { if (e && e.code === "declined") return; }
+  } else if (!window.claude) {
+    try { const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "meownero-pfp.png"; document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); out.hidden = true; return; } catch (e) {}
+  }
   out.textContent = "Right-click or long-press the image to save it.";
   out.append(el("img",{src:cv.toDataURL("image/png"),alt:"Your Meownero PFP"}));
   out.hidden = false;
 });
 
 /* Boot */
-let loaded = 0;
-const onAsset = () => { if (++loaded >= 2) draw(); };
-imgGhost.onload = onAsset; imgOutline.onload = onAsset; imgMask.onload = () => draw();
-if (imgGhost.complete && imgGhost.naturalWidth) loaded++; if (imgOutline.complete && imgOutline.naturalWidth) loaded++;
-sync();
-paintSwatches();
-Promise.all([document.fonts.load('46px "Dela Gothic One"', "ミャウネロ$MNEROひみつ"), document.fonts.ready]).then(() => {
-  document.querySelectorAll(".sw[data-bgid]").forEach(b => { const id = b.dataset.bgid; if (BGS[id]) { const tc = b._thumb.getContext("2d"); tc.setTransform(.12,0,0,.12,0,0); BGS[id].draw(tc); } });
-  paintSwatches(); draw();
-}).catch(()=>{});
+const onLoad = () => { draw(); refreshThumbs(); };
+imgGhost.onload = onLoad; imgOutline.onload = onLoad; imgMask.onload = onLoad;
+sync(); refreshThumbs();
 })();
 </script>
 
