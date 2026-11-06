@@ -233,7 +233,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
       <div class="adder" id="adder" hidden>
         <div class="adder-top">
           <h3>Add to the depot</h3>
-          <div class="row-actions"><button class="btn" id="sync-btn" type="button">Sync from X now</button><button class="btn" id="logout-btn" type="button">Sign out</button></div>
+          <div class="row-actions"><button class="btn" id="logout-btn" type="button">Sign out</button></div>
         </div>
         <p class="note" id="sync-note"></p>
         <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose images or videos to upload">
@@ -487,12 +487,12 @@ addBtn.addEventListener("click", async () => {
 const loginBox = $("#admin-login"), adder = $("#adder");
 function showAdmin(on){
   adder.hidden = !on; loginBox.hidden = true; canDelete = on;
-  if (on) $("#empty-line").textContent = "Drop your first meme in the panel above, or sync from X.";
+  if (on) $("#empty-line").textContent = "Drop your first meme in the panel above. Synced X posts appear here automatically.";
   renderWall(); renderSyncNote();
 }
 function renderSyncNote(){
   const when = lastSync ? new Date(lastSync).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}) : "not yet";
-  $("#sync-note").textContent = `Synced automatically once a day from @lowreswiz, @imnogue and @LFilistin (posts mentioning Meownero). Last sync: ${when}. Manual uploads: images and videos up to ${MAX_MB} MB.`;
+  $("#sync-note").textContent = `Posts mentioning Meownero from @lowreswiz, @imnogue and @LFilistin arrive automatically every two hours through StonkDash's X connection. Last sync: ${when}. Manual uploads: images and videos up to ${MAX_MB} MB.`;
 }
 function openLogin(){ if (adminKey) return showAdmin(true); loginBox.hidden = false; $("#login-pw").focus(); loginBox.scrollIntoView({block:"center"}); }
 $("#admin-link").addEventListener("click", e => { e.preventDefault(); location.hash = "memes"; openLogin(); });
@@ -504,20 +504,6 @@ $("#login-form").addEventListener("submit", async e => {
   catch (err) { adminKey = ""; msg.className = "msg err"; msg.textContent = "That password didn't work."; }
 });
 $("#logout-btn").addEventListener("click", () => { adminKey = ""; try { sessionStorage.removeItem("mnero-admin"); } catch(e){} showAdmin(false); toast("Signed out"); });
-$("#sync-btn").addEventListener("click", async () => {
-  const b = $("#sync-btn"); b.disabled = true; addMsg.className = "msg"; addMsg.textContent = "Checking X for new Meownero posts…";
-  try {
-    const r = await fetch("/api/sync", { method:"POST", headers:{ "x-admin-key":adminKey } });
-    const j = await r.json().catch(() => ({}));
-    if (!r.ok) throw new Error(j.error || `Error ${r.status}`);
-    const who = (j.checked || []).map(h => "@" + h).join(", ") || "no accounts";
-    addMsg.className = j.errors?.length ? "msg err" : "msg";
-    addMsg.textContent = `Checked ${who}. Added ${j.added} new meme${j.added===1?"":"s"}.` + (j.errors?.length ? " " + j.errors.join(" ") : "");
-    await loadMemes(true);
-  } catch (e) { addMsg.className = "msg err"; addMsg.textContent = `Sync failed: ${e.message}`; }
-  b.disabled = false;
-});
-
 /* Load the depot */
 async function loadMemes(fresh){
   try {
