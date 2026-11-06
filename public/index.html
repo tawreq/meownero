@@ -1,0 +1,742 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Meownero ($MNERO): the meme depot and ghost-cat PFP generator. Secrets stay secret.">
+<meta property="og:title" content="Meownero ($MNERO)">
+<meta property="og:description" content="The Meownero meme depot and PFP generator.">
+<meta property="og:image" content="/ghost-sticker.webp">
+<link rel="icon" href="/ghost.webp">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Meownero</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@700;900&family=DM+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: brand-paper page, centered sticker hero, orange ticker band, masonry meme wall, two-column PFP studio.
+   Deliberately single light look: the brand is orange ink on off-white paper. */
+:root{
+  color-scheme: light;
+  --paper:#F7F6F3; --paper-2:#EFEDE7; --card:#FFFFFF;
+  --ink:#17161A; --ink-2:#55524C; --ink-3:#8C887F;
+  --orange:#FA691D; --orange-deep:#D9520D; --orange-tint:#FFE6D6;
+  --line:#E2DED5;
+  --display:"Dela Gothic One","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --maru:"Zen Maru Gothic","Hiragino Maru Gothic ProN",system-ui,sans-serif;
+  --body:"Zen Kaku Gothic New","Hiragino Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"DM Mono",ui-monospace,"SF Mono",Menlo,monospace;
+  --gutter-l:max(16px, env(safe-area-inset-left, 0px));
+  --gutter-r:max(16px, env(safe-area-inset-right, 0px));
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
+body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--paper)}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--orange);outline-offset:3px;border-radius:6px}
+.wrap{max-width:1200px;margin:0 auto;padding-left:var(--gutter-l);padding-right:var(--gutter-r)}
+
+/* Header */
+.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:color-mix(in srgb,var(--paper) 92%,transparent);backdrop-filter:blur(8px)}
+.top .wrap{display:flex;align-items:center;justify-content:space-between;gap:16px;padding-block:14px}
+.brand img{display:block;height:64px;width:auto}
+.nav{display:flex;gap:clamp(18px,4vw,48px)}
+.nav a{font-family:var(--body);font-weight:400;font-size:clamp(19px,2.4vw,30px);text-decoration:none;letter-spacing:-.01em;position:relative}
+.nav a::after{content:"";position:absolute;left:0;right:0;bottom:-2px;height:3px;background:var(--orange);transform:scaleX(0);transform-origin:left;transition:transform .2s}
+.nav a:hover::after,.nav a[aria-current="true"]::after{transform:scaleX(1)}
+@media (max-width:560px){.brand img{height:44px}}
+
+/* Hero */
+.hero{text-align:center;overflow:hidden}
+.hero .wrap{padding-block:18px 0;display:flex;flex-direction:column;align-items:center}
+.tag-jp{font-family:var(--maru);font-weight:700;font-size:clamp(24px,3.6vw,36px);letter-spacing:.06em;line-height:1.2;margin:0;color:var(--ink)}
+.tag-en{font-family:var(--maru);font-weight:900;font-size:clamp(22px,3.1vw,31px);letter-spacing:.04em;line-height:1.15;margin:2px 0 0;color:#2A2723}
+.tag-rule{width:min(430px,80%);height:3px;background:var(--orange);margin-top:10px;border-radius:2px}
+.sticker{position:relative;width:clamp(260px,40vw,470px);height:clamp(330px,46vw,560px);margin-top:18px;overflow:hidden}
+.sticker img{position:absolute;inset:0 0 auto 0;width:100%;height:auto;filter:drop-shadow(0 18px 28px rgba(60,30,10,.16));transform-origin:50% 90%;animation:bob 5.5s ease-in-out infinite}
+@keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(-1.2deg)}}
+@media (prefers-reduced-motion: reduce){.sticker img{animation:none}}
+
+/* Ticker */
+.ticker{background:var(--orange);color:#fff;overflow:hidden;border-block:3px solid var(--ink)}
+.ticker-track{display:flex;width:max-content;animation:tick 32s linear infinite}
+.ticker span{font-family:var(--display);font-size:clamp(17px,2vw,22px);white-space:nowrap;padding:12px 0;letter-spacing:.02em}
+.ticker span i{font-style:normal;color:var(--ink);padding:0 18px}
+@keyframes tick{to{transform:translateX(-50%)}}
+@media (prefers-reduced-motion: reduce){.ticker-track{animation:none}}
+
+/* Sections */
+section.block .wrap{padding-block:clamp(48px,7vw,88px)}
+.sec-head{display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:16px 24px;margin-bottom:28px}
+.kicker{font-family:var(--display);color:var(--orange);font-size:15px;letter-spacing:.12em;margin:0 0 4px}
+h2{font-family:var(--display);font-weight:400;font-size:clamp(36px,6vw,64px);line-height:1;letter-spacing:-.01em;margin:0;text-wrap:balance}
+.sec-sub{color:var(--ink-2);margin:10px 0 0;max-width:52ch}
+.count{font-family:var(--mono);font-size:13px;color:var(--ink-3);letter-spacing:.04em}
+
+/* Chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{font:500 14px/1 var(--body);border:2px solid var(--ink);background:var(--card);color:var(--ink);border-radius:999px;padding:9px 15px;cursor:pointer;transition:background .15s,color .15s,transform .1s}
+.chip:hover{background:var(--orange-tint)}
+.chip:active{transform:translateY(1px)}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+/* Meme wall */
+.wall{columns:4 240px;column-gap:16px}
+.meme{break-inside:avoid;margin:0 0 16px;background:var(--card);border:2px solid var(--ink);border-radius:14px;overflow:hidden;position:relative;box-shadow:4px 4px 0 var(--ink);transition:transform .15s,box-shadow .15s}
+.meme:hover{transform:translate(-2px,-2px);box-shadow:6px 6px 0 var(--orange)}
+.meme button.open{all:unset;display:block;width:100%;cursor:zoom-in}
+.meme button.open:focus-visible{outline:3px solid var(--orange);outline-offset:-3px}
+.meme img,.meme video{display:block;width:100%;height:auto;background:var(--paper-2)}
+.meme .meta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-top:2px solid var(--ink)}
+.meme .cap{font-size:14px;font-weight:500;line-height:1.35;min-width:0;overflow-wrap:anywhere}
+.meme .src{font-family:var(--mono);font-size:12px;color:var(--orange-deep);text-decoration:none;white-space:nowrap}
+.meme .src:hover{text-decoration:underline}
+.meme .kind{position:absolute;top:10px;left:10px;font:500 11px/1 var(--mono);background:var(--ink);color:#fff;padding:5px 7px;border-radius:6px;letter-spacing:.05em}
+.meme .del{position:absolute;top:8px;right:8px;font:500 12px/1 var(--body);background:#fff;border:2px solid var(--ink);border-radius:8px;padding:6px 8px;cursor:pointer;opacity:0;transition:opacity .15s}
+.meme:hover .del,.meme .del:focus-visible{opacity:1}
+.meme .del.confirm{background:#C62828;color:#fff;border-color:#C62828;opacity:1}
+@media (hover:none){.meme .del{opacity:1}}
+.broken{aspect-ratio:4/3;display:grid;place-items:center;color:var(--ink-3);font-size:13px;background:var(--paper-2)}
+
+.empty{border:2px dashed var(--line);border-radius:18px;padding:48px 20px;text-align:center;color:var(--ink-2);display:flex;flex-direction:column;align-items:center;gap:6px}
+.empty img{width:92px;height:auto;opacity:.9}
+.empty b{font-family:var(--display);font-weight:400;color:var(--ink);font-size:22px}
+.status{font-size:14px;color:var(--ink-2);margin:0 0 16px}
+
+/* Editor upload panel */
+.adder{background:var(--card);border:2px solid var(--ink);border-radius:18px;padding:18px;margin-bottom:28px;display:grid;gap:14px}
+.adder h3{font-family:var(--display);font-weight:400;font-size:20px;margin:0}
+.adder .note{font-size:13px;color:var(--ink-3);margin:-8px 0 0}
+.drop{border:2px dashed var(--orange);background:var(--orange-tint);border-radius:14px;padding:22px;text-align:center;cursor:pointer;color:var(--ink-2)}
+.drop.over{background:#FFD2B5}
+.drop strong{color:var(--ink)}
+.fields{display:grid;grid-template-columns:2fr 1fr 2fr;gap:12px}
+@media (max-width:760px){.fields{grid-template-columns:1fr}}
+label.f{display:grid;gap:5px;font-size:13px;font-weight:700;min-width:0}
+label.f input{font:400 15px/1.3 var(--body);padding:10px 12px;border:2px solid var(--line);border-radius:10px;background:var(--paper);color:var(--ink);width:100%;min-width:0}
+label.f input:focus{border-color:var(--ink);outline:none}
+.queue{display:flex;flex-wrap:wrap;gap:8px}
+.queue .q{position:relative;width:72px;height:72px;border-radius:10px;overflow:hidden;border:2px solid var(--ink);background:var(--paper-2)}
+.queue .q img,.queue .q video{width:100%;height:100%;object-fit:cover}
+.queue .q span{position:absolute;inset:auto 0 0 0;font:500 10px/1.6 var(--mono);background:rgba(23,22,26,.8);color:#fff;text-align:center}
+.row-actions{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.btn{font:700 15px/1 var(--body);border:2px solid var(--ink);border-radius:12px;padding:13px 18px;cursor:pointer;background:var(--card);color:var(--ink);box-shadow:3px 3px 0 var(--ink);transition:transform .1s,box-shadow .1s}
+.btn:hover{transform:translate(-1px,-1px);box-shadow:4px 4px 0 var(--ink)}
+.btn:active{transform:translate(2px,2px);box-shadow:1px 1px 0 var(--ink)}
+.btn.primary{background:var(--orange);color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:3px 3px 0 var(--ink)}
+.msg{font-size:14px;color:var(--ink-2)}
+.msg.err{color:#B3261E}
+
+/* Lightbox */
+dialog.lb{border:0;padding:0;background:transparent;max-width:min(980px,94vw);width:100%;max-height:92vh}
+dialog.lb::backdrop{background:rgba(23,22,26,.82)}
+.lb-inner{background:var(--card);border:2px solid var(--ink);border-radius:18px;overflow:hidden;display:flex;flex-direction:column;max-height:92vh}
+.lb-media{background:var(--ink);display:grid;place-items:center;min-height:0;flex:1 1 auto;overflow:hidden}
+.lb-media img,.lb-media video{max-width:100%;max-height:72vh;display:block}
+.lb-bar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px 16px;padding:14px 16px}
+.lb-bar .cap{font-weight:500;min-width:0;overflow-wrap:anywhere}
+.lb-bar .acts{display:flex;flex-wrap:wrap;gap:10px}
+
+/* PFP studio */
+.pfp{background:var(--paper-2);border-top:3px solid var(--ink)}
+.studio{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:clamp(20px,4vw,48px);align-items:start}
+@media (max-width:900px){.studio{grid-template-columns:1fr}}
+.stage{position:sticky;top:calc(env(safe-area-inset-top,0px) + 104px)}
+@media (max-width:900px){.stage{position:static}}
+.canvas-frame{background:var(--card);border:3px solid var(--ink);border-radius:20px;box-shadow:8px 8px 0 var(--ink);overflow:hidden;aspect-ratio:1/1;max-width:100%;transition:border-radius .25s}
+.canvas-frame.round{border-radius:50%}
+.canvas-frame canvas{display:block;width:100%;height:100%}
+.stage-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}
+.panel{display:grid;gap:22px;min-width:0}
+.group{display:grid;gap:10px;min-width:0}
+.group h4{margin:0;font:700 13px/1 var(--body);letter-spacing:.12em;text-transform:uppercase;color:var(--ink-2);display:flex;justify-content:space-between;gap:8px}
+.group h4 em{font-style:normal;font-family:var(--display);font-weight:400;letter-spacing:.04em;color:var(--orange);text-transform:none}
+.swatches{display:flex;flex-wrap:wrap;gap:10px}
+.sw{width:52px;height:52px;border-radius:12px;border:2px solid var(--ink);cursor:pointer;padding:0;position:relative;background-size:cover;background-position:center}
+.sw[aria-pressed="true"]{box-shadow:0 0 0 3px var(--paper-2),0 0 0 6px var(--orange)}
+.sw.up{display:grid;place-items:center;background:var(--card);font:700 22px/1 var(--body);color:var(--ink-2)}
+.toggles{display:flex;flex-wrap:wrap;gap:8px 18px}
+.tg{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:500;cursor:pointer}
+.tg input{width:18px;height:18px;accent-color:var(--orange)}
+.cap-in{font:400 16px/1.3 var(--body);padding:11px 13px;border:2px solid var(--ink);border-radius:12px;background:var(--card);color:var(--ink);width:100%;min-width:0}
+.cap-in:focus{outline:3px solid var(--orange);outline-offset:1px}
+.save-out{margin-top:14px;font-size:14px;color:var(--ink-2)}
+.save-out img{display:block;width:180px;height:180px;border:2px solid var(--ink);border-radius:14px;margin-top:8px}
+
+footer{background:var(--ink);color:#CFCBC3}
+.admin-link{color:#8C887F;font-size:13px;text-decoration:none}
+.admin-link:hover{color:#fff;text-decoration:underline}
+.adder-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
+#login-form{align-items:flex-end}
+footer .wrap{padding-block:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
+footer img{height:40px;width:auto;display:block;background:var(--paper);padding:6px 10px;border-radius:10px}
+footer p{margin:0;font-size:13px;max-width:60ch}
+.toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:14px;z-index:20;box-shadow:0 8px 30px rgba(0,0,0,.25)}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="Meownero home"><img src="logo.webp" alt="ミャウネロ Meownero $MNERO" width="720" height="277"></a>
+    <nav class="nav" aria-label="Main">
+      <a href="#memes" id="nav-memes">Memes</a>
+      <a href="#pfp" id="nav-pfp">PFPs</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero" aria-label="Meownero">
+    <div class="wrap">
+      <p class="tag-jp" lang="ja">ひみつは、ひみつのまま。</p>
+      <p class="tag-en">Secrets stay secret.</p>
+      <div class="tag-rule" aria-hidden="true"></div>
+      <div class="sticker"><img src="ghost-sticker.webp" alt="An orange cat wearing a white ghost sheet with cat ears" width="756" height="1561"></div>
+    </div>
+  </section>
+
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker-track" id="ticker"></div>
+  </div>
+
+  <section class="block" id="memes" aria-labelledby="memes-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <p class="kicker" lang="ja">ミーム倉庫</p>
+          <h2 id="memes-h">Meme Depot</h2>
+          <p class="sec-sub">The best Meownero memes from X, kept in one place. Tap any meme to open it, see the original post, or use it as a PFP background.</p>
+        </div>
+        <div style="display:grid;gap:10px;justify-items:end">
+          <span class="count" id="meme-count"></span>
+          <div class="chips" role="group" aria-label="Filter memes">
+            <button class="chip" data-filter="all" aria-pressed="true">All</button>
+            <button class="chip" data-filter="image" aria-pressed="false">Images</button>
+            <button class="chip" data-filter="video" aria-pressed="false">Videos</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="adder" id="admin-login" hidden>
+        <h3>Admin sign-in</h3>
+        <form id="login-form" class="row-actions">
+          <label class="f" style="flex:1 1 240px">Admin password <input id="login-pw" type="password" autocomplete="current-password" required></label>
+          <button class="btn primary" type="submit">Sign in</button>
+          <span class="msg" id="login-msg" role="status"></span>
+        </form>
+      </div>
+
+      <div class="adder" id="adder" hidden>
+        <div class="adder-top">
+          <h3>Add to the depot</h3>
+          <div class="row-actions"><button class="btn" id="sync-btn" type="button">Sync from X now</button><button class="btn" id="logout-btn" type="button">Sign out</button></div>
+        </div>
+        <p class="note" id="sync-note"></p>
+        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose images or videos to upload">
+          <strong>Drop images or videos here</strong> or click to browse
+          <input type="file" id="file-in" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm" multiple hidden>
+        </div>
+        <div class="queue" id="queue"></div>
+        <div class="fields">
+          <label class="f">Caption <input id="f-cap" maxlength="140" placeholder="gm from the ghost"></label>
+          <label class="f">Creator <input id="f-handle" maxlength="40" placeholder="@handle"></label>
+          <label class="f">X post link <input id="f-url" maxlength="300" placeholder="https://x.com/…/status/…"></label>
+        </div>
+        <div class="row-actions">
+          <button class="btn primary" id="add-btn" disabled>Add to depot</button>
+          <span class="msg" id="add-msg" role="status"></span>
+        </div>
+      </div>
+
+      <p class="status" id="wall-status" role="status"></p>
+      <div class="wall" id="wall"></div>
+      <div class="empty" id="wall-empty" hidden>
+        <img src="ghost.webp" alt="" width="756" height="1561" style="height:120px;width:auto">
+        <b>The depot is empty</b>
+        <span id="empty-line">New memes show up here as soon as they're added.</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="block pfp" id="pfp" aria-labelledby="pfp-h">
+    <div class="wrap">
+      <div class="sec-head">
+        <div>
+          <p class="kicker" lang="ja">プロフィール画像</p>
+          <h2 id="pfp-h">PFP Generator</h2>
+          <p class="sec-sub">Dress the ghost, pick a background, add a caption, and save a 1000 × 1000 PNG ready for X.</p>
+        </div>
+      </div>
+      <div class="studio">
+        <div class="stage">
+          <div class="canvas-frame" id="frame"><canvas id="cv" width="1000" height="1000" role="img" aria-label="Your Meownero profile picture preview"></canvas></div>
+          <div class="stage-actions">
+            <button class="btn primary" id="save-btn">Save PNG</button>
+            <button class="btn" id="rand-btn">Randomize</button>
+            <button class="btn" id="reset-btn">Reset</button>
+          </div>
+          <div class="save-out" id="save-out" hidden></div>
+        </div>
+        <div class="panel" id="panel"></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <img src="logo.webp" alt="Meownero" width="720" height="277">
+    <p>Meownero ($MNERO) is a community meme token. Nothing on this site is financial advice. Memes belong to their creators and link back to the original posts.</p>
+    <a href="#admin" class="admin-link" id="admin-link">Admin</a>
+  </div>
+</footer>
+
+<dialog class="lb" id="lb" aria-label="Meme viewer">
+  <div class="lb-inner">
+    <div class="lb-media" id="lb-media"></div>
+    <div class="lb-bar">
+      <span class="cap" id="lb-cap"></span>
+      <div class="acts">
+        <a class="btn" id="lb-src" target="_blank" rel="noopener" hidden>View on X</a>
+        <button class="btn" id="lb-bg" hidden>Use as PFP background</button>
+        <button class="btn primary" id="lb-close">Close</button>
+      </div>
+    </div>
+  </div>
+</dialog>
+
+<script src="blob-client.js"></script>
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const el = (tag, props = {}, kids = []) => { const n = document.createElement(tag); Object.assign(n, props); for (const k of kids) n.append(k); return n; };
+let toastT;
+function toast(text){ let t = $(".toast"); if(!t){ t = el("div",{className:"toast",role:"status"}); document.body.append(t);} t.textContent = text; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 2600); }
+
+/* ---------- Ticker ---------- */
+const tickBits = ["ひみつは、ひみつのまま。","SECRETS STAY SECRET","$MNERO","ミャウネロ","MEOWNERO"];
+const track = $("#ticker");
+for (let r = 0; r < 2; r++) { const s = el("span"); for (let i=0;i<3;i++){ for (const b of tickBits){ s.append(b); s.append(el("i",{textContent:"✕"})); } } track.append(s); }
+
+/* ---------- Nav highlight ---------- */
+const navMap = { memes: $("#nav-memes"), pfp: $("#nav-pfp") };
+const io = new IntersectionObserver(es => { for (const e of es) if (e.isIntersecting) for (const [k,a] of Object.entries(navMap)) a.setAttribute("aria-current", String(k === e.target.id)); }, { rootMargin: "-45% 0px -50% 0px" });
+io.observe($("#memes")); io.observe($("#pfp"));
+
+/* =========================================================
+   MEME DEPOT
+   ========================================================= */
+const wall = $("#wall"), wallEmpty = $("#wall-empty"), wallStatus = $("#wall-status"), countEl = $("#meme-count");
+let memes = [], filter = "all", canDelete = false, lastSync = null;
+let adminKey = ""; try { adminKey = sessionStorage.getItem("mnero-admin") || ""; } catch(e){}
+
+function safeXUrl(u){ try { const x = new URL(u); if (x.protocol === "https:" && /(^|\.)(x\.com|twitter\.com)$/i.test(x.hostname)) return x.href; } catch(e){} return null; }
+function cleanHandle(h){ h = String(h||"").trim().replace(/^@+/,""); return /^[A-Za-z0-9_]{1,30}$/.test(h) ? h : ""; }
+function srcFor(m){ return m.url; }
+async function api(body){
+  const r = await fetch("/api/memes", { method:"POST", headers:{ "content-type":"application/json", "x-admin-key":adminKey }, body:JSON.stringify(body) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.error || `Error ${r.status}`);
+  return j;
+}
+
+function renderWall(){
+  wall.textContent = "";
+  const list = memes.filter(m => filter === "all" || m.kind === filter);
+  countEl.textContent = memes.length ? `${memes.length} meme${memes.length===1?"":"s"} archived` : "";
+  wallEmpty.hidden = list.length > 0 || !!wallStatus.dataset.loading;
+  if (!list.length && memes.length) { wallEmpty.hidden = false; $("#empty-line").textContent = `No ${filter === "video" ? "videos" : "images"} yet. Try another filter.`; }
+  for (const m of list) wall.append(memeCard(m));
+}
+function memeCard(m){
+  const card = el("figure",{className:"meme"});
+  const open = el("button",{className:"open",type:"button"});
+  open.setAttribute("aria-label", m.caption ? `Open meme: ${m.caption}` : "Open meme");
+  let media;
+  if (m.kind === "video") {
+    media = el("video",{src:srcFor(m),muted:true,loop:true,playsInline:true,preload:"metadata"});
+    media.setAttribute("muted","");
+    card.addEventListener("mouseenter",()=>media.play().catch(()=>{}));
+    card.addEventListener("mouseleave",()=>media.pause());
+    card.append(el("span",{className:"kind",textContent:"VIDEO"}));
+  } else {
+    media = el("img",{src:srcFor(m),alt:m.caption||"Meownero meme",loading:"lazy",decoding:"async"});
+  }
+  media.addEventListener("error",()=>{ media.replaceWith(el("div",{className:"broken",textContent:"This file couldn't load"})); },{once:true});
+  open.append(media);
+  open.addEventListener("click",()=>openLightbox(m));
+  card.prepend(open);
+  const handle = cleanHandle(m.handle), xurl = safeXUrl(m.xUrl);
+  if (m.caption || handle || xurl) {
+    const meta = el("figcaption",{className:"meta"});
+    meta.append(el("span",{className:"cap",textContent:m.caption||""}));
+    if (xurl || handle) {
+      const a = el("a",{className:"src",textContent: handle ? "@"+handle+" ↗" : "Source ↗",target:"_blank",rel:"noopener"});
+      a.href = xurl || ("https://x.com/" + handle);
+      meta.append(a);
+    }
+    card.append(meta);
+  }
+  if (canDelete) {
+    const del = el("button",{className:"del",type:"button",textContent:"Remove"});
+    let armed = false, armT;
+    del.addEventListener("click", async ev => {
+      ev.stopPropagation();
+      if (!armed) { armed = true; del.classList.add("confirm"); del.textContent = "Confirm remove"; armT = setTimeout(()=>{armed=false;del.classList.remove("confirm");del.textContent="Remove";},4000); return; }
+      clearTimeout(armT); del.disabled = true; del.textContent = "Removing…";
+      try { await api({ action:"delete", id:m.id }); memes = memes.filter(x => x.id !== m.id); renderWall(); toast("Removed from the depot"); }
+      catch(e){ del.disabled = false; del.textContent = "Remove"; toast("Couldn't remove it. Try again."); }
+    });
+    card.append(del);
+  }
+  return card;
+}
+document.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click",()=>{
+  filter = b.dataset.filter;
+  document.querySelectorAll("[data-filter]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+  renderWall();
+}));
+
+/* Lightbox */
+const lb = $("#lb");
+let lbMeme = null;
+function openLightbox(m){
+  lbMeme = m;
+  const box = $("#lb-media"); box.textContent = "";
+  if (m.kind === "video") box.append(el("video",{src:srcFor(m),controls:true,autoplay:true,loop:true,playsInline:true}));
+  else box.append(el("img",{src:srcFor(m),alt:m.caption||"Meownero meme"}));
+  const handle = cleanHandle(m.handle);
+  $("#lb-cap").textContent = [m.caption, handle && "by @"+handle].filter(Boolean).join(" · ");
+  const xurl = safeXUrl(m.xUrl) || (handle ? "https://x.com/"+handle : null);
+  const src = $("#lb-src"); src.hidden = !xurl; if (xurl) src.href = xurl;
+  $("#lb-bg").hidden = m.kind !== "image";
+  lb.showModal();
+}
+function closeLightbox(){ const v = $("#lb-media video"); if (v) v.pause(); lb.close(); }
+$("#lb-close").addEventListener("click", closeLightbox);
+lb.addEventListener("click", e => { if (e.target === lb) closeLightbox(); });
+lb.addEventListener("close", () => { const v = $("#lb-media video"); if (v) v.pause(); });
+$("#lb-bg").addEventListener("click", () => { if (lbMeme) useMemeAsPhoto(lbMeme); });
+
+/* Uploader (admin only) */
+let pending = [];
+const queue = $("#queue"), addBtn = $("#add-btn"), addMsg = $("#add-msg");
+const OK_TYPES = ["image/png","image/jpeg","image/gif","image/webp","video/mp4","video/webm"];
+const MAX_MB = 100;
+function addFiles(files){
+  for (const f of files) {
+    if (!OK_TYPES.includes(f.type)) { addMsg.textContent = `${f.name} isn't a supported image or video.`; addMsg.className = "msg err"; continue; }
+    if (f.size > MAX_MB*1024*1024) { addMsg.textContent = `${f.name} is over ${MAX_MB} MB. Compress it and try again.`; addMsg.className = "msg err"; continue; }
+    pending.push(f);
+  }
+  drawQueue();
+}
+function drawQueue(){
+  queue.textContent = "";
+  pending.forEach(f => {
+    const q = el("div",{className:"q"});
+    const url = URL.createObjectURL(f);
+    q.append(f.type.startsWith("video") ? el("video",{src:url,muted:true}) : el("img",{src:url,alt:""}));
+    q.append(el("span",{textContent: f.type.startsWith("video") ? "video" : "image"}));
+    q.title = f.name;
+    queue.append(q);
+  });
+  addBtn.disabled = !pending.length;
+  addBtn.textContent = pending.length > 1 ? `Add ${pending.length} to depot` : "Add to depot";
+}
+const drop = $("#drop"), fileIn = $("#file-in");
+drop.addEventListener("click",()=>fileIn.click());
+drop.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileIn.click(); }});
+fileIn.addEventListener("change",()=>{ addFiles(fileIn.files); fileIn.value=""; });
+["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over");}));
+["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over");}));
+drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));
+const safeName = n => (String(n).toLowerCase().replace(/[^a-z0-9.]+/g,"-").replace(/^-+|-+$/g,"") || "meme").slice(-80);
+addBtn.addEventListener("click", async () => {
+  if (!pending.length || !adminKey) return;
+  const rawUrl = $("#f-url").value.trim();
+  if (rawUrl && !safeXUrl(rawUrl)) { addMsg.textContent = "That link isn't an x.com or twitter.com post. Fix it or leave it blank."; addMsg.className = "msg err"; return; }
+  addBtn.disabled = true;
+  const caption = $("#f-cap").value.trim().slice(0,140), handle = cleanHandle($("#f-handle").value), xUrl = rawUrl ? safeXUrl(rawUrl) : "";
+  let done = 0, failed = 0;
+  const batch = pending.slice();
+  for (const f of batch) {
+    addMsg.className = "msg"; addMsg.textContent = `Uploading ${done+failed+1} of ${batch.length}…`;
+    try {
+      const up = await BlobClient.upload("depot/media/" + safeName(f.name), f, { access:"public", handleUploadUrl:"/api/upload", headers:{ "x-admin-key":adminKey }, multipart: f.size > 8*1024*1024, contentType: f.type });
+      await api({ action:"add", items:[{ url:up.url, pathname:up.pathname, kind: f.type.startsWith("video") ? "video" : "image", caption, handle, xUrl }] });
+      done++;
+      pending = pending.filter(p => p !== f);
+    } catch (e) {
+      failed++;
+      addMsg.className = "msg err"; addMsg.textContent = `${f.name}: ${e.message || "upload failed"}.`;
+    }
+  }
+  drawQueue();
+  if (!failed) { addMsg.className = "msg"; addMsg.textContent = `Added ${done} meme${done===1?"":"s"}.`; $("#f-cap").value = ""; $("#f-url").value = ""; }
+  else if (done) { addMsg.textContent += ` ${done} added; the rest are still in the queue.`; }
+  loadMemes(true);
+});
+
+/* Admin sign-in and sync */
+const loginBox = $("#admin-login"), adder = $("#adder");
+function showAdmin(on){
+  adder.hidden = !on; loginBox.hidden = true; canDelete = on;
+  if (on) $("#empty-line").textContent = "Drop your first meme in the panel above, or sync from X.";
+  renderWall(); renderSyncNote();
+}
+function renderSyncNote(){
+  const when = lastSync ? new Date(lastSync).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}) : "not yet";
+  $("#sync-note").textContent = `Synced automatically once a day from @lowreswiz, @imnogue and @LFilistin (posts mentioning Meownero). Last sync: ${when}. Manual uploads: images and videos up to ${MAX_MB} MB.`;
+}
+function openLogin(){ if (adminKey) return showAdmin(true); loginBox.hidden = false; $("#login-pw").focus(); loginBox.scrollIntoView({block:"center"}); }
+$("#admin-link").addEventListener("click", e => { e.preventDefault(); location.hash = "memes"; openLogin(); });
+$("#login-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const msg = $("#login-msg"); msg.className = "msg"; msg.textContent = "Checking…";
+  adminKey = $("#login-pw").value;
+  try { await api({ action:"check" }); try { sessionStorage.setItem("mnero-admin", adminKey); } catch(e){} msg.textContent = ""; $("#login-pw").value = ""; showAdmin(true); }
+  catch (err) { adminKey = ""; msg.className = "msg err"; msg.textContent = "That password didn't work."; }
+});
+$("#logout-btn").addEventListener("click", () => { adminKey = ""; try { sessionStorage.removeItem("mnero-admin"); } catch(e){} showAdmin(false); toast("Signed out"); });
+$("#sync-btn").addEventListener("click", async () => {
+  const b = $("#sync-btn"); b.disabled = true; addMsg.className = "msg"; addMsg.textContent = "Checking X for new Meownero posts…";
+  try {
+    const r = await fetch("/api/sync", { method:"POST", headers:{ "x-admin-key":adminKey } });
+    const j = await r.json().catch(() => ({}));
+    if (!r.ok) throw new Error(j.error || `Error ${r.status}`);
+    const who = (j.checked || []).map(h => "@" + h).join(", ") || "no accounts";
+    addMsg.className = j.errors?.length ? "msg err" : "msg";
+    addMsg.textContent = `Checked ${who}. Added ${j.added} new meme${j.added===1?"":"s"}.` + (j.errors?.length ? " " + j.errors.join(" ") : "");
+    await loadMemes(true);
+  } catch (e) { addMsg.className = "msg err"; addMsg.textContent = `Sync failed: ${e.message}`; }
+  b.disabled = false;
+});
+
+/* Load the depot */
+async function loadMemes(fresh){
+  try {
+    const r = await fetch("/api/memes" + (fresh ? `?t=${Date.now()}` : ""), { cache: fresh ? "no-store" : "default" });
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    memes = (j.memes || []).filter(m => typeof m.url === "string" && /^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(m.url));
+    lastSync = j.lastSync || null;
+    wallStatus.textContent = "";
+  } catch (e) {
+    wallStatus.textContent = "The meme depot couldn't load right now. Refresh to try again.";
+  }
+  delete wallStatus.dataset.loading;
+  renderWall(); if (canDelete) renderSyncNote();
+}
+wallStatus.dataset.loading = "1"; wallStatus.textContent = "Loading memes…";
+loadMemes(false);
+if (adminKey) api({ action:"check" }).then(() => showAdmin(true)).catch(() => { adminKey = ""; try { sessionStorage.removeItem("mnero-admin"); } catch(e){} });
+if (location.hash === "#admin") openLogin();
+
+/* =========================================================
+   PFP GENERATOR
+   ========================================================= */
+const cv = $("#cv"), ctx = cv.getContext("2d");
+const ORANGE = "#FA691D", INK = "#17161A", PAPER = "#F7F6F3";
+const imgGhost = new Image(), imgOutline = new Image();
+imgGhost.src = "ghost.webp"; imgOutline.src = "ghost-outline.webp";
+let customBg = null;
+
+/* Cat-space landmarks (ghost.webp pixels, 756 × 1561) */
+const EYE_L = [313,184], EYE_R = [458,174];
+const EYE_C = [(EYE_L[0]+EYE_R[0])/2, (EYE_L[1]+EYE_R[1])/2];
+const EYE_A = Math.atan2(EYE_R[1]-EYE_L[1], EYE_R[0]-EYE_L[0]);
+const EYE_D = Math.hypot(EYE_R[0]-EYE_L[0], EYE_R[1]-EYE_L[1]) / 2;
+const MOUTH = [398,268], CHEST = [398,372];
+
+const FRAMES = {
+  bust: { label:"Close-up", s:1.25, ox:500-383*1.25, oy:100 },
+  full: { label:"Full body", s:0.58, ox:500-378*0.58, oy:62 },
+};
+
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
+function rng(seed){ let s = seed; return () => (s = (s*1664525 + 1013904223) >>> 0) / 4294967296; }
+
+const BGS = {
+  paper: { label:"Paper", draw(c){ c.fillStyle=PAPER; c.fillRect(0,0,1000,1000); c.fillStyle="rgba(23,22,26,.07)"; for(let y=20;y<1000;y+=40) for(let x=20;x<1000;x+=40){ c.beginPath(); c.arc(x,y,2.2,0,7); c.fill(); } } },
+  orange: { label:"Orange", draw(c){ const g=c.createRadialGradient(500,420,60,500,500,760); g.addColorStop(0,"#FF8B4A"); g.addColorStop(1,"#E8560E"); c.fillStyle=g; c.fillRect(0,0,1000,1000); } },
+  ink: { label:"Ink", draw(c){ c.fillStyle=INK; c.fillRect(0,0,1000,1000); const g=c.createRadialGradient(500,380,40,500,420,560); g.addColorStop(0,"rgba(250,105,29,.45)"); g.addColorStop(1,"rgba(250,105,29,0)"); c.fillStyle=g; c.fillRect(0,0,1000,1000); } },
+  sakura: { label:"Sakura", draw(c){ c.fillStyle="#F6CDD3"; c.fillRect(0,0,1000,1000); const r=rng(7); for(let i=0;i<26;i++){ const x=r()*1000,y=r()*1000,s=10+r()*14,a=r()*6.3; c.save(); c.translate(x,y); c.rotate(a); c.fillStyle=`rgba(255,255,255,${.35+r()*.35})`; c.beginPath(); c.ellipse(0,0,s,s*.6,0,0,7); c.fill(); c.restore(); } } },
+  kanji: { label:"Katakana", draw(c){ c.fillStyle=PAPER; c.fillRect(0,0,1000,1000); c.save(); c.translate(500,500); c.rotate(-0.17); c.font='118px "Dela Gothic One", sans-serif'; c.fillStyle="rgba(250,105,29,.17)"; c.textBaseline="middle"; for(let row=-6;row<=6;row++){ c.fillText("ミャウネロミャウネロ", -1100 + (row%2?120:0), row*150); } c.restore(); } },
+  burst: { label:"Sunburst", draw(c){ c.fillStyle="#FF8A45"; c.fillRect(0,0,1000,1000); c.save(); c.translate(500,430); c.fillStyle=ORANGE; const n=22; for(let i=0;i<n;i++){ const a0=i/n*Math.PI*2, a1=(i+.5)/n*Math.PI*2; c.beginPath(); c.moveTo(0,0); c.lineTo(Math.cos(a0)*1200,Math.sin(a0)*1200); c.lineTo(Math.cos(a1)*1200,Math.sin(a1)*1200); c.closePath(); c.fill(); } c.restore(); } },
+  night: { label:"Night", draw(c){ const g=c.createLinearGradient(0,0,0,1000); g.addColorStop(0,"#0E1330"); g.addColorStop(1,"#2B2150"); c.fillStyle=g; c.fillRect(0,0,1000,1000); const r=rng(42); for(let i=0;i<90;i++){ c.fillStyle=`rgba(255,255,255,${.3+r()*.7})`; c.beginPath(); c.arc(r()*1000,r()*1000,.8+r()*2.2,0,7); c.fill(); } c.save(); c.shadowColor="rgba(255,226,170,.6)"; c.shadowBlur=60; c.fillStyle="#FFE7B5"; c.beginPath(); c.arc(820,170,82,0,7); c.fill(); c.restore(); c.fillStyle="rgba(220,190,140,.35)"; [[795,150,16],[845,195,11],[830,140,7]].forEach(([x,y,r])=>{c.beginPath();c.arc(x,y,r,0,7);c.fill();}); } },
+  secret: { label:"Secret", draw(c){ c.fillStyle=ORANGE; c.fillRect(0,0,1000,1000); c.save(); c.translate(500,500); c.rotate(-0.35); c.font='54px "Dela Gothic One", sans-serif'; c.textBaseline="middle"; for(let row=-12;row<=12;row++){ c.fillStyle = row%2 ? "rgba(255,255,255,.16)" : "rgba(23,22,26,.12)"; c.fillText("ひみつ SECRET ひみつ SECRET ひみつ SECRET ひみつ SECRET", -1300 + (row%2?140:0), row*78); } c.restore(); } },
+};
+
+/* ---- Accessory drawers (cat space) ---- */
+function eyesFrame(c, fn){ c.save(); c.translate(EYE_C[0],EYE_C[1]); c.rotate(EYE_A); fn(c, EYE_D); c.restore(); }
+const EYES = {
+  none:{label:"None", draw(){}},
+  shades:{label:"Shades", draw(c){ eyesFrame(c,(c,d)=>{ c.fillStyle="#0E0E10"; rr(c,-d-64,-36,128,70,30); c.fill(); rr(c,d-64,-36,128,70,30); c.fill(); c.fillRect(-20,-30,40,11); c.lineWidth=10; c.strokeStyle="#0E0E10"; c.beginPath(); c.moveTo(-d-64,-18); c.lineTo(-d-150,-34); c.moveTo(d+64,-18); c.lineTo(d+150,-34); c.stroke(); c.fillStyle="rgba(255,255,255,.18)"; c.beginPath(); c.ellipse(-d-26,-16,26,8,-.3,0,7); c.fill(); c.beginPath(); c.ellipse(d-26,-16,26,8,-.3,0,7); c.fill(); }); }},
+  pixel:{label:"Pixel shades", draw(c){ eyesFrame(c,(c,d)=>{ const u=15, x0=-11*u, y0=-2*u; const rows=["1111111111111111111111","0111111100001111111100","0011111100000111111000","0001111000000011110000"]; const hi={ "1,2":1,"1,3":1,"2,3":1,"1,13":1,"1,14":1,"2,14":1}; rows.forEach((r,ri)=>{ [...r].forEach((ch,ci)=>{ if(ch==="1"){ c.fillStyle = hi[ri+","+ci] ? "#FFFFFF" : "#0B0B0D"; c.fillRect(x0+ci*u,y0+ri*u,u+.5,u+.5); } }); }); }); }},
+  laser:{label:"Laser eyes", draw(c){ eyesFrame(c,(c,d)=>{ c.save(); c.globalCompositeOperation="lighter"; for(const side of [-1,1]){ const ex=side*d; const ang = side<0 ? Math.PI+0.18 : -0.18; c.save(); c.translate(ex,0); c.rotate(ang); const g=c.createLinearGradient(0,0,1400,0); g.addColorStop(0,"rgba(255,60,40,.95)"); g.addColorStop(1,"rgba(255,60,40,0)"); c.fillStyle=g; c.beginPath(); c.moveTo(0,-10); c.lineTo(1400,-70); c.lineTo(1400,70); c.lineTo(0,10); c.closePath(); c.fill(); c.fillStyle="rgba(255,240,220,.9)"; c.beginPath(); c.moveTo(0,-3); c.lineTo(900,-12); c.lineTo(900,12); c.lineTo(0,3); c.closePath(); c.fill(); c.restore(); const rg=c.createRadialGradient(ex,0,0,ex,0,70); rg.addColorStop(0,"rgba(255,255,255,1)"); rg.addColorStop(.25,"rgba(255,80,50,.95)"); rg.addColorStop(1,"rgba(255,40,20,0)"); c.fillStyle=rg; c.beginPath(); c.arc(ex,0,70,0,7); c.fill(); } c.restore(); }); }},
+  specs:{label:"Round specs", draw(c){ eyesFrame(c,(c,d)=>{ c.lineWidth=8; c.strokeStyle="#3A2416"; c.fillStyle="rgba(255,255,255,.12)"; for(const s of [-1,1]){ c.beginPath(); c.arc(s*d,0,50,0,7); c.fill(); c.stroke(); } c.beginPath(); c.moveTo(-d+50,-6); c.quadraticCurveTo(0,-26,d-50,-6); c.stroke(); c.beginPath(); c.moveTo(-d-50,-4); c.lineTo(-d-120,-16); c.moveTo(d+50,-4); c.lineTo(d+120,-16); c.stroke(); }); }},
+  monocle:{label:"Monocle", draw(c){ eyesFrame(c,(c,d)=>{ c.fillStyle="rgba(255,255,255,.14)"; c.strokeStyle="#C8961E"; c.lineWidth=10; c.beginPath(); c.arc(d,0,54,0,7); c.fill(); c.stroke(); c.lineWidth=4; c.setLineDash([9,6]); c.beginPath(); c.moveTo(d+40,38); c.bezierCurveTo(d+90,140,d+40,220,d+70,300); c.stroke(); c.setLineDash([]); }); }},
+};
+const HEADS = {
+  none:{label:"None", draw(){}},
+  party:{label:"Party hat", draw(c){ c.save(); c.beginPath(); c.moveTo(286,92); c.lineTo(458,82); c.lineTo(388,-160); c.closePath(); c.save(); c.clip(); c.fillStyle=ORANGE; c.fillRect(200,-200,350,320); c.strokeStyle="#FFFFFF"; c.lineWidth=20; for(let i=-6;i<8;i++){ c.beginPath(); c.moveTo(200,-60+i*42); c.lineTo(560,-140+i*42); c.stroke(); } c.restore(); c.lineWidth=6; c.strokeStyle=INK; c.beginPath(); c.moveTo(286,92); c.lineTo(458,82); c.lineTo(388,-160); c.closePath(); c.stroke(); c.fillStyle="#FFFFFF"; c.beginPath(); c.arc(388,-166,26,0,7); c.fill(); c.stroke(); c.restore(); }},
+  crown:{label:"Crown", draw(c){ c.save(); const g=c.createLinearGradient(0,-40,0,100); g.addColorStop(0,"#FFE07A"); g.addColorStop(1,"#D79A12"); c.fillStyle=g; c.strokeStyle="#8A5A06"; c.lineWidth=6; c.beginPath(); c.moveTo(262,96); c.lineTo(250,-10); c.lineTo(305,40); c.lineTo(338,-42); c.lineTo(372,28); c.lineTo(406,-42); c.lineTo(440,40); c.lineTo(494,-10); c.lineTo(482,90); c.quadraticCurveTo(372,72,262,96); c.closePath(); c.fill(); c.stroke(); [[338,-42,"#E2412B"],[406,-42,"#E2412B"],[250,-10,"#2AA6A1"],[494,-10,"#2AA6A1"]].forEach(([x,y,col])=>{ c.fillStyle=col; c.beginPath(); c.arc(x,y,11,0,7); c.fill(); c.stroke(); }); c.fillStyle=ORANGE; c.beginPath(); c.arc(372,62,14,0,7); c.fill(); c.stroke(); c.restore(); }},
+  halo:{label:"Halo", draw(c){ c.save(); c.shadowColor="rgba(255,214,90,.9)"; c.shadowBlur=40; c.strokeStyle="#FFD45A"; c.lineWidth=16; c.beginPath(); c.ellipse(372,-46,140,32,-.04,0,7); c.stroke(); c.shadowBlur=0; c.strokeStyle="#FFF4C2"; c.lineWidth=4; c.beginPath(); c.ellipse(372,-46,140,32,-.04,0,7); c.stroke(); c.restore(); }},
+  band:{label:"Headband", draw(c){ c.save(); c.fillStyle=ORANGE; c.strokeStyle=INK; c.lineWidth=5; c.beginPath(); c.moveTo(168,104); c.quadraticCurveTo(372,70,590,92); c.lineTo(590,126); c.quadraticCurveTo(372,104,170,138); c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.moveTo(580,100); c.quadraticCurveTo(660,90,700,40); c.lineTo(716,62); c.quadraticCurveTo(672,116,584,122); c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.moveTo(584,110); c.quadraticCurveTo(680,140,712,120); c.lineTo(708,148); c.quadraticCurveTo(660,160,582,124); c.closePath(); c.fill(); c.stroke(); c.font='30px "Dela Gothic One", sans-serif'; c.fillStyle="#FFFFFF"; c.textAlign="center"; c.textBaseline="middle"; c.translate(380,104); c.rotate(-0.03); c.fillText("ひみつ", 0, 2); c.restore(); }},
+  tophat:{label:"Top hat", draw(c){ c.save(); c.fillStyle="#141317"; c.beginPath(); c.moveTo(296,84); c.lineTo(286,-150); c.quadraticCurveTo(372,-170,458,-150); c.lineTo(448,82); c.closePath(); c.fill(); c.fillStyle=ORANGE; c.beginPath(); c.moveTo(294,40); c.quadraticCurveTo(372,26,450,40); c.lineTo(449,74); c.quadraticCurveTo(372,60,295,74); c.closePath(); c.fill(); c.fillStyle="#141317"; c.beginPath(); c.ellipse(372,86,158,24,-.02,0,7); c.fill(); c.fillStyle="rgba(255,255,255,.08)"; c.fillRect(300,-140,22,170); c.restore(); }},
+  bow:{label:"Ear bow", draw(c){ c.save(); c.translate(486,82); c.rotate(.35); c.fillStyle="#FF6FA0"; c.strokeStyle=INK; c.lineWidth=5; for(const s of [-1,1]){ c.beginPath(); c.moveTo(0,0); c.bezierCurveTo(s*40,-60,s*95,-40,s*82,0); c.bezierCurveTo(s*95,40,s*40,60,0,0); c.closePath(); c.fill(); c.stroke(); } c.beginPath(); c.arc(0,0,17,0,7); c.fill(); c.stroke(); c.restore(); }},
+};
+const MOUTHS = {
+  none:{label:"None", draw(){}},
+  mask:{label:"Ninja mask", draw(c){ c.save(); c.fillStyle="#18171C"; c.beginPath(); c.moveTo(282,214); c.quadraticCurveTo(398,184,516,200); c.quadraticCurveTo(522,280,494,334); c.quadraticCurveTo(400,360,306,336); c.quadraticCurveTo(276,280,282,214); c.closePath(); c.fill(); c.strokeStyle="rgba(255,255,255,.08)"; c.lineWidth=5; [[300,250,500,238],[306,290,500,282]].forEach(([a,b,x,y])=>{ c.beginPath(); c.moveTo(a,b); c.quadraticCurveTo(400,b+16,x,y); c.stroke(); }); c.restore(); }},
+  fish:{label:"Fish snack", draw(c){ c.save(); c.translate(MOUTH[0]-6,MOUTH[1]+6); c.rotate(.08); const g=c.createLinearGradient(0,-28,0,28); g.addColorStop(0,"#9DB4C8"); g.addColorStop(1,"#5F7C96"); c.fillStyle=g; c.strokeStyle=INK; c.lineWidth=5; c.beginPath(); c.moveTo(150,0); c.lineTo(205,-36); c.lineTo(198,0); c.lineTo(205,36); c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.ellipse(70,0,92,30,0,0,7); c.fill(); c.stroke(); c.fillStyle=INK; c.beginPath(); c.arc(16,-6,6,0,7); c.fill(); c.strokeStyle="rgba(23,22,26,.45)"; c.lineWidth=3; c.beginPath(); c.moveTo(40,-22); c.quadraticCurveTo(50,0,40,22); c.stroke(); c.restore(); }},
+  gum:{label:"Bubble gum", draw(c){ c.save(); const g=c.createRadialGradient(380,262,10,398,278,64); g.addColorStop(0,"#FFC1D8"); g.addColorStop(1,"#FF7FAE"); c.fillStyle=g; c.strokeStyle="rgba(200,60,110,.6)"; c.lineWidth=4; c.beginPath(); c.arc(398,282,60,0,7); c.fill(); c.stroke(); c.fillStyle="rgba(255,255,255,.75)"; c.beginPath(); c.ellipse(374,258,15,9,-.6,0,7); c.fill(); c.restore(); }},
+  coin:{label:"Coin bite", draw(c){ c.save(); c.translate(MOUTH[0],MOUTH[1]+10); c.rotate(-.12); c.fillStyle="#B9480C"; c.beginPath(); c.ellipse(4,6,56,56,0,0,7); c.fill(); c.fillStyle=ORANGE; c.strokeStyle=INK; c.lineWidth=5; c.beginPath(); c.arc(0,0,56,0,7); c.fill(); c.stroke(); c.strokeStyle="rgba(255,255,255,.55)"; c.lineWidth=4; c.beginPath(); c.arc(0,0,42,0,7); c.stroke(); c.fillStyle="#FFFFFF"; c.font='52px "Dela Gothic One", sans-serif'; c.textAlign="center"; c.textBaseline="middle"; c.fillText("M",0,3); c.restore(); }},
+};
+const NECKS = {
+  none:{label:"None", draw(){}},
+  bowtie:{label:"Bow tie", draw(c){ c.save(); c.translate(CHEST[0],CHEST[1]); c.fillStyle=INK; for(const s of [-1,1]){ c.beginPath(); c.moveTo(0,0); c.lineTo(s*76,-38); c.quadraticCurveTo(s*86,0,s*76,38); c.closePath(); c.fill(); } c.fillStyle=ORANGE; rr(c,-20,-20,40,40,10); c.fill(); c.restore(); }},
+  chain:{label:"Gold chain", draw(c){ c.save(); c.strokeStyle="#E3B23C"; c.lineWidth=12; c.lineCap="round"; c.setLineDash([16,10]); c.beginPath(); c.moveTo(232,326); c.quadraticCurveTo(398,560,560,316); c.stroke(); c.setLineDash([]); c.translate(398,452); c.fillStyle="#E3B23C"; c.beginPath(); c.arc(0,0,62,0,7); c.fill(); c.fillStyle=ORANGE; c.strokeStyle="#9C6A0C"; c.lineWidth=5; c.beginPath(); c.arc(0,0,50,0,7); c.fill(); c.stroke(); c.fillStyle="#FFFFFF"; c.font='48px "Dela Gothic One", sans-serif'; c.textAlign="center"; c.textBaseline="middle"; c.fillText("M",0,3); c.restore(); }},
+  scarf:{label:"Scarf", draw(c){ c.save(); c.fillStyle=ORANGE; c.strokeStyle=INK; c.lineWidth=5; c.beginPath(); c.moveTo(214,330); c.quadraticCurveTo(398,388,584,318); c.lineTo(592,376); c.quadraticCurveTo(398,452,206,388); c.closePath(); c.fill(); c.stroke(); c.beginPath(); c.moveTo(470,380); c.lineTo(530,380); c.lineTo(548,560); c.lineTo(486,566); c.closePath(); c.fill(); c.stroke(); c.strokeStyle="rgba(255,255,255,.6)"; c.lineWidth=8; for(let i=0;i<3;i++){ c.beginPath(); c.moveTo(476+i*4,440+i*40); c.lineTo(536+i*4,438+i*40); c.stroke(); } c.restore(); }},
+};
+
+const DEFAULTS = { bg:"paper", head:"none", eyes:"none", mouth:"none", neck:"none", frame:"bust", outline:true, tag:true, round:false, caption:"" };
+let S = { ...DEFAULTS };
+try { const saved = JSON.parse(localStorage.getItem("mnero-pfp") || "null"); if (saved && typeof saved === "object") for (const k of Object.keys(DEFAULTS)) if (k in saved && typeof saved[k] === typeof DEFAULTS[k]) S[k] = saved[k]; } catch(e){}
+if (S.bg === "custom") S.bg = "paper";
+function persist(){ try { localStorage.setItem("mnero-pfp", JSON.stringify(S)); } catch(e){} }
+
+function drawCover(c, img){ const r = Math.max(1000/img.naturalWidth, 1000/img.naturalHeight); const w = img.naturalWidth*r, h = img.naturalHeight*r; c.drawImage(img, (1000-w)/2, (1000-h)/2, w, h); }
+
+function draw(){
+  const c = ctx;
+  c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,1000,1000);
+  if (S.bg === "custom" && customBg) drawCover(c, customBg); else (BGS[S.bg] || BGS.paper).draw(c);
+  if (imgGhost.complete && imgGhost.naturalWidth) {
+    const f = FRAMES[S.frame] || FRAMES.bust;
+    c.save(); c.setTransform(f.s,0,0,f.s,f.ox,f.oy);
+    c.save(); c.shadowColor="rgba(40,20,0,.22)"; c.shadowBlur=36; c.shadowOffsetY=14;
+    if (S.outline && imgOutline.complete) c.drawImage(imgOutline,0,0); else c.drawImage(imgGhost,0,0);
+    c.restore();
+    if (S.outline) c.drawImage(imgGhost,0,0);
+    NECKS[S.neck].draw(c); MOUTHS[S.mouth].draw(c); EYES[S.eyes].draw(c); HEADS[S.head].draw(c);
+    c.restore();
+  }
+  c.setTransform(1,0,0,1,0,0);
+  if (S.tag) { c.save(); c.font='46px "Dela Gothic One", sans-serif'; const w = c.measureText("$MNERO").width + 44; c.fillStyle=ORANGE; c.strokeStyle=INK; c.lineWidth=5; rr(c,40,40,w,74,18); c.fill(); c.stroke(); c.fillStyle="#FFFFFF"; c.textBaseline="middle"; c.fillText("$MNERO", 62, 80); c.restore(); }
+  const cap = S.caption.trim();
+  if (cap) { c.save(); let size = 92; c.font=`${size}px "Dela Gothic One", sans-serif`; while (c.measureText(cap).width > 900 && size > 40) { size -= 4; c.font=`${size}px "Dela Gothic One", sans-serif`; } c.textAlign="center"; c.textBaseline="alphabetic"; c.lineJoin="round"; c.lineWidth=size*0.2; c.strokeStyle=INK; c.strokeText(cap,500,955); c.fillStyle="#FFFFFF"; c.fillText(cap,500,955); c.restore(); }
+  $("#frame").classList.toggle("round", S.round);
+}
+
+/* ---- Controls ---- */
+const panel = $("#panel");
+function chipGroup(title, jp, key, opts){
+  const g = el("div",{className:"group"});
+  const h = el("h4"); h.append(title, el("em",{textContent:jp,lang:"ja"})); g.append(h);
+  const row = el("div",{className:"chips",role:"group"}); row.setAttribute("aria-label", title);
+  for (const [id,o] of Object.entries(opts)) {
+    const b = el("button",{className:"chip",type:"button",textContent:o.label}); b.dataset.key = key; b.dataset.val = id;
+    b.addEventListener("click",()=>{ S[key] = id; sync(); });
+    row.append(b);
+  }
+  g.append(row); return g;
+}
+const bgGroup = el("div",{className:"group"});
+{ const h = el("h4"); h.append("Background", el("em",{textContent:"背景",lang:"ja"})); bgGroup.append(h);
+  const row = el("div",{className:"swatches",role:"group"}); row.setAttribute("aria-label","Background");
+  for (const [id,o] of Object.entries(BGS)) {
+    const b = el("button",{className:"sw",type:"button",title:o.label}); b.setAttribute("aria-label", o.label+" background");
+    const t = document.createElement("canvas"); t.width = t.height = 120; const tc0 = t.getContext("2d"); tc0.scale(.12,.12); o.draw(tc0);
+    b.dataset.bgid = id; b._thumb = t;
+    b.addEventListener("click",()=>{ S.bg = id; sync(); });
+    row.append(b);
+  }
+  const up = el("button",{className:"sw up",type:"button",textContent:"+",title:"Upload your own background"}); up.setAttribute("aria-label","Upload your own background"); up.dataset.bgid = "custom";
+  const upIn = el("input",{type:"file",accept:"image/*",hidden:true});
+  up.addEventListener("click",()=> customBg && S.bg !== "custom" ? (S.bg = "custom", sync()) : upIn.click());
+  up.addEventListener("dblclick",()=>upIn.click());
+  upIn.addEventListener("change",()=>{ const f = upIn.files[0]; if (!f) return; const img = new Image(); img.onload = () => setCustomBg(img); img.onerror = () => toast("That file couldn't be read as an image"); img.src = URL.createObjectURL(f); upIn.value=""; });
+  row.append(up, upIn); bgGroup.append(row);
+}
+function paintSwatches(){ document.querySelectorAll(".sw[data-bgid]").forEach(b => { if (b._thumb) b.style.backgroundImage = `url(${b._thumb.toDataURL("image/png")})`; }); }
+function setCustomBg(img){ customBg = img; S.bg = "custom"; const up = document.querySelector('.sw[data-bgid="custom"]'); try { const t=document.createElement("canvas"); t.width=t.height=120; const tc=t.getContext("2d"); const r=Math.max(120/img.naturalWidth,120/img.naturalHeight); tc.drawImage(img,(120-img.naturalWidth*r)/2,(120-img.naturalHeight*r)/2,img.naturalWidth*r,img.naturalHeight*r); up.style.backgroundImage=`url(${t.toDataURL()})`; up.textContent=""; } catch(e){} sync(); }
+
+/* A meme from the depot becomes the PFP background */
+function useMemeAsPhoto(m){
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = () => { setCustomBg(img); closeLightbox(); document.getElementById("pfp").scrollIntoView(); toast("Meme set as your PFP background"); };
+  img.onerror = () => toast("Couldn't load that image as a background");
+  img.src = srcFor(m);
+}
+
+panel.append(
+  bgGroup,
+  chipGroup("Headwear","帽子","head",HEADS),
+  chipGroup("Eyes","目","eyes",EYES),
+  chipGroup("Mouth","口","mouth",MOUTHS),
+  chipGroup("Neck","首","neck",NECKS),
+  chipGroup("Framing","構図","frame",FRAMES),
+);
+{ const g = el("div",{className:"group"}); const h = el("h4"); h.append("Caption", el("em",{textContent:"文字",lang:"ja"})); g.append(h);
+  const inp = el("input",{className:"cap-in",id:"cap-in",maxLength:24,placeholder:"gm, ghosts"}); inp.setAttribute("aria-label","Caption text"); inp.value = S.caption;
+  inp.addEventListener("input",()=>{ S.caption = inp.value; persist(); draw(); });
+  g.append(inp); panel.append(g); }
+{ const g = el("div",{className:"group"}); const h = el("h4"); h.append("Extras", el("em",{textContent:"その他",lang:"ja"})); g.append(h);
+  const row = el("div",{className:"toggles"});
+  [["outline","Sticker outline"],["tag","$MNERO tag"],["round","Preview as circle"]].forEach(([k,label])=>{
+    const lab = el("label",{className:"tg"}); const cb = el("input",{type:"checkbox",id:"tg-"+k,checked:S[k]});
+    cb.addEventListener("change",()=>{ S[k] = cb.checked; sync(); });
+    lab.append(cb, label); row.append(lab);
+  });
+  g.append(row); panel.append(g); }
+
+function sync(){
+  document.querySelectorAll(".chip[data-key]").forEach(b => b.setAttribute("aria-pressed", String(S[b.dataset.key] === b.dataset.val)));
+  document.querySelectorAll(".sw[data-bgid]").forEach(b => b.setAttribute("aria-pressed", String(S.bg === b.dataset.bgid)));
+  ["outline","tag","round"].forEach(k => { const cb = $("#tg-"+k); if (cb) cb.checked = S[k]; });
+  persist(); draw();
+}
+
+const pick = o => { const k = Object.keys(o); return k[Math.floor(Math.random()*k.length)]; };
+$("#rand-btn").addEventListener("click",()=>{ S.bg = pick(BGS); S.head = pick(HEADS); S.eyes = pick(EYES); S.mouth = Math.random()<.45 ? "none" : pick(MOUTHS); S.neck = Math.random()<.4 ? "none" : pick(NECKS); sync(); });
+$("#reset-btn").addEventListener("click",()=>{ S = { ...DEFAULTS }; $("#cap-in").value = ""; sync(); });
+
+$("#save-btn").addEventListener("click", async () => {
+  draw();
+  const blob = await new Promise(r => cv.toBlob(r, "image/png"));
+  if (!blob) { toast("Couldn't create the image. Try again."); return; }
+  const out = $("#save-out");
+  try {
+    const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "meownero-pfp.png";
+    document.body.append(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    out.hidden = true; return;
+  } catch (e) {}
+  out.textContent = "Right-click or long-press the image to save it.";
+  out.append(el("img",{src:cv.toDataURL("image/png"),alt:"Your Meownero PFP"}));
+  out.hidden = false;
+});
+
+/* Boot */
+let loaded = 0;
+const onAsset = () => { if (++loaded >= 2) draw(); };
+imgGhost.onload = onAsset; imgOutline.onload = onAsset;
+if (imgGhost.complete && imgGhost.naturalWidth) loaded++; if (imgOutline.complete && imgOutline.naturalWidth) loaded++;
+sync();
+paintSwatches();
+Promise.all([document.fonts.load('46px "Dela Gothic One"', "ミャウネロ$MNEROひみつ"), document.fonts.ready]).then(() => {
+  document.querySelectorAll(".sw[data-bgid]").forEach(b => { const id = b.dataset.bgid; if (BGS[id]) { const tc = b._thumb.getContext("2d"); tc.setTransform(.12,0,0,.12,0,0); BGS[id].draw(tc); } });
+  paintSwatches(); draw();
+}).catch(()=>{});
+})();
+</script>
+
+</body>
+</html>
