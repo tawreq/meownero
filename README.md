@@ -5,7 +5,7 @@ Meme depot + ghost-cat PFP generator. Static page in `public/`, Vercel Functions
 ## How the depot fills up
 - **X sync** runs in the StonkDash repo (`tawreq/stonkdash`, workflow "Meownero depot sync", every two hours or by hand),
   using StonkDash's existing X keys. It searches @lowreswiz, @imnogue and @LFilistin for posts mentioning
-  Meownero / $MNERO / ミャウネロ with images or video and sends them to `POST /api/ingest`, which accepts only GitHub OIDC
+  Meownero / $MEOWNERO / ミャウネロ with images or video and sends them to `POST /api/ingest`, which accepts only GitHub OIDC
   tokens issued to tawreq/stonkdash for the "meownero" audience (no shared password). First run looks back 3 days.
 - **Manual uploads**: open the site, click **Admin** in the footer, sign in, drop files.
 - Removing a synced meme keeps it from coming back.

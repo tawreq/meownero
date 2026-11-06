@@ -46,7 +46,7 @@ globalThis.fetch = async (url, opts = {}) => {
     if (u.searchParams.get("since_id")) return json({ meta: { result_count: 0 } });
     return json({
       data: [
-        { id: "1854000000000009001", author_id: "u1", text: "gm $MNERO https://t.co/z", created_at: "2026-11-05T10:00:00Z", attachments: { media_keys: ["3_a", "7_v"] } },
+        { id: "1854000000000009001", author_id: "u1", text: "gm $MEOWNERO https://t.co/z", created_at: "2026-11-05T10:00:00Z", attachments: { media_keys: ["3_a", "7_v"] } },
         { id: "1854000000000009002", author_id: "u2", text: "Meownero meme", created_at: "2026-11-05T09:00:00Z", attachments: { media_keys: ["3_b"] } },
         { id: "1854000000000009003", author_id: "u2", text: "meownero thoughts, no media", created_at: "2026-11-05T08:00:00Z" },
       ],
