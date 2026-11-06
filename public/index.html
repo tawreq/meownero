@@ -547,84 +547,117 @@ function paw(c, x, y, s, col){ c.fillStyle = col; c.beginPath(); c.ellipse(x, y+
    - { src }  a transparent PNG/WebP the same size as ghost.webp (756 × 1561), drawn on top of the cat.
               Optional { x, y, w, h } place a smaller image in ghost.webp pixels instead.
    - { draw } a placeholder fabric printed onto the sheet (until real clothing art arrives). */
-/* ---- Original jackets, drawn in sheet space (756 × 1561) and printed onto the cloth ---- */
-const CX = 388, NY = 345;                  // body centre line, neckline at the chin
-const FACE = { x:390, y:222, rx:138, ry:142 }; // hood opening around the face holes
+/* ---- Original jackets with realistic fabric textures, drawn in sheet space (756 × 1561) ---- */
+const CX = 388, NY = 345;
+const FACE = { x:390, y:222, rx:138, ry:142 };
+function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
 function bodyClip(c){ c.beginPath(); c.moveTo(0,SH); c.lineTo(0,440); c.quadraticCurveTo(CX-150, NY-10, CX, NY); c.quadraticCurveTo(CX+150, NY-10, SW, 430); c.lineTo(SW,SH); c.closePath(); c.clip(); }
 function eraseHead(c, dy=0){ c.save(); c.globalCompositeOperation = "destination-out"; c.fillStyle = "#000"; c.beginPath(); c.moveTo(0,0); c.lineTo(SW,0); c.lineTo(SW,430+dy); c.quadraticCurveTo(CX+150, NY-10+dy, CX, NY+dy); c.quadraticCurveTo(CX-150, NY-10+dy, 0, 440+dy); c.closePath(); c.fill(); c.restore(); }
-function noise(c, alpha, seed, n=9000){ const r = rng(seed); for (let i=0;i<n;i++){ c.fillStyle = r()<.5 ? `rgba(255,255,255,${alpha})` : `rgba(0,0,0,${alpha})`; c.fillRect(r()*SW, r()*SH, 2, 2); } }
-function zipper(c, col, top=NY){ c.fillStyle = col; c.fillRect(CX-5, top, 10, SH-top); c.fillStyle = "rgba(0,0,0,.35)"; for (let y=top; y<SH; y+=9) c.fillRect(CX-6, y, 12, 3); c.fillStyle = col; rr(c, CX-11, top+18, 22, 46, 6); c.fill(); }
-function hoodRing(c, col, edge){ c.save(); c.globalCompositeOperation = "destination-out"; c.fillStyle = "#000"; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx, FACE.ry, 0, 0, 7); c.fill(); c.restore(); c.lineWidth = 30; c.strokeStyle = col; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx+12, FACE.ry+12, 0, 0, 7); c.stroke(); c.lineWidth = 4; c.strokeStyle = edge; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx+26, FACE.ry+26, 0, 0, 7); c.stroke(); }
-function strings(c, col, tip){ c.strokeStyle = col; c.lineWidth = 9; c.lineCap = "round"; for (const [x0,x1] of [[CX-38,CX-52],[CX+38,CX+50]]) { c.beginPath(); c.moveTo(x0, NY+6); c.quadraticCurveTo(x0-4, NY+90, x1, NY+180); c.stroke(); c.fillStyle = tip; rr(c, x1-7, NY+176, 14, 34, 5); c.fill(); } }
-function rr(c,x,y,w,h,r){ c.beginPath(); c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r); c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath(); }
-function button(c, x, y, r, col){ const g = c.createRadialGradient(x-r*.3, y-r*.3, 1, x, y, r); g.addColorStop(0,"#FFFFFF"); g.addColorStop(1,col); c.fillStyle = g; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle="rgba(0,0,0,.35)"; c.lineWidth=2; c.stroke(); }
+function eraseFace(c){ c.save(); c.globalCompositeOperation = "destination-out"; c.fillStyle = "#000"; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx, FACE.ry, 0, 0, 7); c.fill(); c.restore(); }
+// Per-pixel grain: mono noise of the given strength (0–255), plus optional vertical slub for denim.
+function grain(c, strength, seed, slub=0){
+  const img = c.getImageData(0,0,SW,SH), d = img.data, r = rng(seed);
+  const col = new Float32Array(SW); for (let x=0;x<SW;x++) col[x] = (r()-.5)*slub;
+  for (let i=0, p=0; i<d.length; i+=4, p++) { if (!d[i+3]) continue; const n = (r()-.5)*strength + col[p % SW]; d[i] = Math.max(0,Math.min(255,d[i]+n)); d[i+1] = Math.max(0,Math.min(255,d[i+1]+n)); d[i+2] = Math.max(0,Math.min(255,d[i+2]+n)); }
+  c.putImageData(img,0,0);
+}
+function sheen(c, x, y, rx, ry, a){ c.save(); c.translate(x,y); c.scale(1, ry/rx); const g = c.createRadialGradient(0,0,0,0,0,rx); g.addColorStop(0,`rgba(255,255,255,${a})`); g.addColorStop(1,"rgba(255,255,255,0)"); c.fillStyle = g; c.beginPath(); c.arc(0,0,rx,0,7); c.fill(); c.restore(); }
+function shade(c, x, y, rx, ry, a){ c.save(); c.translate(x,y); c.scale(1, ry/rx); const g = c.createRadialGradient(0,0,0,0,0,rx); g.addColorStop(0,`rgba(0,0,0,${a})`); g.addColorStop(1,"rgba(0,0,0,0)"); c.fillStyle = g; c.beginPath(); c.arc(0,0,rx,0,7); c.fill(); c.restore(); }
+function zipper(c, tape, teeth, top=NY){ c.fillStyle = tape; c.fillRect(CX-9, top, 18, SH-top); c.fillStyle = teeth; for (let y=top; y<SH; y+=7) { c.fillRect(CX-5, y, 5, 4); c.fillRect(CX, y+3, 5, 4); } const g = c.createLinearGradient(CX-12,0,CX+12,0); g.addColorStop(0,"#9DA2A8"); g.addColorStop(.5,"#F2F4F6"); g.addColorStop(1,"#80858C"); c.fillStyle = g; rr(c, CX-12, top+16, 24, 50, 6); c.fill(); c.fillStyle = "rgba(0,0,0,.4)"; rr(c, CX-5, top+56, 10, 30, 4); c.fill(); }
+function hood(c, rim, edgeLight){ eraseFace(c); c.save(); c.lineWidth = 34; c.strokeStyle = rim; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx+14, FACE.ry+14, 0, 0, 7); c.stroke(); c.lineWidth = 3; c.strokeStyle = edgeLight; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx+3, FACE.ry+3, 0, 0, 7); c.stroke(); c.restore(); shade(c, FACE.x, FACE.y+FACE.ry+10, 160, 40, .35); for (let a=0; a<Math.PI*2; a+=0.21) { const x = FACE.x + Math.cos(a)*(FACE.rx+14), y = FACE.y + Math.sin(a)*(FACE.ry+14); c.strokeStyle = "rgba(0,0,0,.28)"; c.lineWidth = 2; c.beginPath(); c.moveTo(x - Math.cos(a)*16, y - Math.sin(a)*16); c.lineTo(x + Math.cos(a)*16, y + Math.sin(a)*16); c.stroke(); } }
+function cords(c, col, tip){ c.lineCap = "round"; for (const [x0,x1] of [[CX-40,CX-56],[CX+40,CX+54]]) { c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 12; c.beginPath(); c.moveTo(x0+3, NY+8); c.quadraticCurveTo(x0, NY+92, x1+3, NY+184); c.stroke(); c.strokeStyle = col; c.lineWidth = 10; c.beginPath(); c.moveTo(x0, NY+4); c.quadraticCurveTo(x0-4, NY+90, x1, NY+180); c.stroke(); c.strokeStyle = "rgba(255,255,255,.25)"; c.lineWidth = 2; c.setLineDash([3,5]); c.stroke(); c.setLineDash([]); const g = c.createLinearGradient(x1-8,0,x1+8,0); g.addColorStop(0, tip[0]); g.addColorStop(.5, tip[1]); g.addColorStop(1, tip[0]); c.fillStyle = g; rr(c, x1-8, NY+176, 16, 40, 6); c.fill(); } }
+function snap(c, x, y, r, metal){ const g = c.createRadialGradient(x-r*.35, y-r*.35, 1, x, y, r); g.addColorStop(0, metal[0]); g.addColorStop(.6, metal[1]); g.addColorStop(1, metal[2]); shade(c, x+2, y+3, r+6, r+6, .35); c.fillStyle = g; c.beginPath(); c.arc(x,y,r,0,7); c.fill(); c.strokeStyle = "rgba(0,0,0,.4)"; c.lineWidth = 1.5; c.beginPath(); c.arc(x,y,r*.62,0,7); c.stroke(); }
+function rib(c, path, w, stripes, seed){ c.save(); c.lineCap = "butt"; for (const [ww, col] of stripes) { c.strokeStyle = col; c.lineWidth = w*ww; path(); c.stroke(); } c.restore(); }
+function star5(c, x, y, r, col){ c.fillStyle = col; c.beginPath(); for (let i=0;i<10;i++){ const a = -Math.PI/2 + i*Math.PI/5, rad = i%2 ? r*.45 : r; c[i?"lineTo":"moveTo"](x+Math.cos(a)*rad, y+Math.sin(a)*rad); } c.closePath(); c.fill(); }
 
+const MILO = "#1A1A1D";
 const JACKETS = [
   { id:"puffer", label:"Midnight Puffer", draw(c){
-      c.fillStyle = "#2B2B31"; c.fillRect(0,0,SW,SH);
-      // baffles: puffy horizontal channels with a soft sheen
-      for (let y=NY-260; y<SH; y+=86) { const g = c.createLinearGradient(0,y,0,y+86); g.addColorStop(0,"rgba(0,0,0,.45)"); g.addColorStop(.45,"rgba(255,255,255,.18)"); g.addColorStop(1,"rgba(0,0,0,.5)"); c.fillStyle = g; c.fillRect(0,y,SW,86); }
-      // tonal paw prints quilted into every other channel
-      for (let y=NY-217, row=0; y<SH; y+=172, row++) for (let x=(row%2?60:140); x<SW; x+=160) paw(c, x, y, 16, "rgba(255,255,255,.07)");
-      hoodRing(c, "#1E1E22", "rgba(255,255,255,.12)");
-      zipper(c, "#111114"); strings(c, "#121215", "#3A3A40");
+      // glossy black nylon, tufted quilting on a diamond lattice, embossed tonal cat heads
+      c.fillStyle = MILO; c.fillRect(0,0,SW,SH);
+      const s = 104;
+      for (let row=0, y=-s; y<SH+s; y+=s/2, row++) for (let x=(row%2? s/2:0)-s; x<SW+s; x+=s) { sheen(c, x, y, s*.55, s*.42, .13); shade(c, x, y+s*.32, s*.5, s*.2, .25); }
+      for (let row=0, y=-s; y<SH+s; y+=s/2, row++) for (let x=(row%2? 0:s/2)-s; x<SW+s; x+=s) { shade(c, x, y, 18, 18, .7); c.strokeStyle = "rgba(255,255,255,.10)"; c.lineWidth = 2; c.beginPath(); for (const [dx,dy] of [[-14,0],[14,0],[0,-14],[0,14]]) { c.moveTo(x,y); c.lineTo(x+dx,y+dy); } c.stroke(); }
+      for (let row=0, y=-s/2; y<SH+s; y+=s, row++) for (let x=(row%2? s/2:0); x<SW+s; x+=s*2) { catHead(c, x+1.5, y+1.5, 15, "rgba(0,0,0,.55)"); catHead(c, x, y, 15, "rgba(255,255,255,.07)"); }
+      sheen(c, 210, 640, 220, 520, .10); sheen(c, 590, 600, 160, 420, .07);
+      grain(c, 10, 21);
+      hood(c, "#121214", "rgba(255,255,255,.14)");
+      zipper(c, "#0E0E10", "#2A2A2E"); cords(c, "#0D0D0F", ["#1C1C1F","#4A4A50"]);
   } },
   { id:"denim", label:"Denim Trucker", draw(c){
-      c.fillStyle = "#7FA6CF"; c.fillRect(0,0,SW,SH);
-      c.strokeStyle = "rgba(255,255,255,.10)"; c.lineWidth = 2; for (let x=-SH; x<SW; x+=7){ c.beginPath(); c.moveTo(x,0); c.lineTo(x+SH*.6,SH); c.stroke(); }
-      noise(c, .08, 5);
-      const g = c.createRadialGradient(CX, 700, 60, CX, 700, 520); g.addColorStop(0,"rgba(255,255,255,.22)"); g.addColorStop(1,"rgba(255,255,255,0)"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
+      // light stonewash denim: twill, vertical slub, wash fade, whiskers, darker seams, frayed cat patches
+      const g = c.createRadialGradient(CX, 720, 40, CX, 760, 620); g.addColorStop(0,"#A9C7E6"); g.addColorStop(.6,"#87AFD8"); g.addColorStop(1,"#6E98C6"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
+      c.lineWidth = 1.4; for (let x=-SH; x<SW; x+=5){ c.strokeStyle = x % 10 ? "rgba(255,255,255,.13)" : "rgba(30,60,110,.13)"; c.beginPath(); c.moveTo(x,0); c.lineTo(x+SH*.55,SH); c.stroke(); }
+      const r = rng(4); c.lineCap = "round"; for (let i=0;i<60;i++){ const x = 120 + r()*520, y = 900 + r()*220; c.strokeStyle = `rgba(255,255,255,${.12+r()*.18})`; c.lineWidth = 2+r()*4; c.beginPath(); c.moveTo(x,y); c.quadraticCurveTo(x+40, y-10-r()*20, x+90+r()*60, y-6); c.stroke(); }
+      grain(c, 26, 5, 22);
       eraseHead(c, 0);
       c.save(); bodyClip(c);
-      const stitch = (path) => { c.strokeStyle = "#E7B36A"; c.lineWidth = 3; c.setLineDash([9,6]); path(); c.stroke(); c.setLineDash([]); };
-      stitch(() => { c.beginPath(); c.moveTo(0,470); c.quadraticCurveTo(CX, 520, SW, 460); });                  // yoke seam
-      for (const s of [-1,1]) { const px = CX + s*145; c.fillStyle = "rgba(40,70,110,.25)"; rr(c, px-62, 500, 124, 120, 10); c.fill(); stitch(() => rr(c, px-56, 506, 112, 108, 8)); c.fillStyle = "#6E95BF"; rr(c, px-66, 494, 132, 46, 10); c.fill(); stitch(() => rr(c, px-60, 500, 120, 34, 8)); button(c, px, 524, 9, "#B9BEC6"); }
-      c.fillStyle = "rgba(40,70,110,.25)"; c.fillRect(CX-24, NY, 48, SH);  stitch(() => { c.beginPath(); c.moveTo(CX-20,NY+40); c.lineTo(CX-20,SH); c.moveTo(CX+20,NY+40); c.lineTo(CX+20,SH); });
-      for (let y=NY+70; y<SH; y+=118) button(c, CX, y, 12, "#B9BEC6");
-      catHead(c, CX+150, 690, 20, "#FA691D");                                                              // small orange patch
+      const seam = (path) => { c.strokeStyle = "rgba(25,55,100,.35)"; c.lineWidth = 10; path(); c.stroke(); c.strokeStyle = "#D9A55B"; c.lineWidth = 2.6; c.setLineDash([8,5]); path(); c.stroke(); c.setLineDash([]); };
+      seam(() => { c.beginPath(); c.moveTo(0,478); c.quadraticCurveTo(CX, 528, SW, 468); });
+      // frayed, bleached cat-head patches on the yoke
+      for (const [px,py] of [[CX-215,430],[CX+205,425],[CX-110,452],[CX+105,450]]) { c.save(); c.beginPath(); catHead(c, px, py, 24, "rgba(255,255,255,0)"); c.clip(); for (let i=0;i<160;i++){ const x = px-28+r()*56, y = py-30+r()*56; c.strokeStyle = `rgba(250,250,255,${.55+r()*.4})`; c.lineWidth = 1.2+r()*1.4; c.beginPath(); c.moveTo(x,y); c.lineTo(x+(r()-.5)*10, y+5+r()*6); c.stroke(); } c.restore(); }
+      for (const s of [-1,1]) { const px = CX + s*150; shade(c, px, 590, 80, 70, .18); seam(() => rr(c, px-60, 512, 120, 118, 10)); c.fillStyle = "rgba(255,255,255,.08)"; rr(c, px-66, 500, 132, 48, 10); c.fill(); seam(() => rr(c, px-62, 502, 124, 44, 8)); snap(c, px, 530, 9, ["#FFFFFF","#C9CED6","#7D838C"]); }
+      c.fillStyle = "rgba(25,55,100,.18)"; c.fillRect(CX-26, NY, 52, SH); seam(() => { c.beginPath(); c.moveTo(CX-22,NY+40); c.lineTo(CX-22,SH); }); seam(() => { c.beginPath(); c.moveTo(CX+22,NY+40); c.lineTo(CX+22,SH); });
+      for (let y=NY+72; y<SH; y+=118) snap(c, CX, y, 12, ["#FFFFFF","#C9CED6","#7D838C"]);
       c.restore();
-      // pointed collar
-      c.fillStyle = "#6F98C4"; for (const s of [-1,1]) { c.beginPath(); c.moveTo(CX + s*8, NY-6); c.lineTo(CX + s*170, NY-24); c.lineTo(CX + s*92, NY+118); c.closePath(); c.fill(); c.strokeStyle = "#E7B36A"; c.lineWidth = 3; c.setLineDash([9,6]); c.stroke(); c.setLineDash([]); }
+      for (const s of [-1,1]) { c.save(); c.beginPath(); c.moveTo(CX + s*8, NY-8); c.lineTo(CX + s*172, NY-26); c.lineTo(CX + s*94, NY+120); c.closePath(); c.fillStyle = "#93B6DB"; c.fill(); c.clip(); for (let x=-200; x<SW; x+=5){ c.strokeStyle = "rgba(255,255,255,.12)"; c.lineWidth = 1.2; c.beginPath(); c.moveTo(x,0); c.lineTo(x+600,1000); c.stroke(); } c.restore(); c.strokeStyle = "#D9A55B"; c.lineWidth = 2.6; c.setLineDash([8,5]); c.beginPath(); c.moveTo(CX + s*14, NY); c.lineTo(CX + s*160, NY-18); c.lineTo(CX + s*92, NY+106); c.stroke(); c.setLineDash([]); shade(c, CX + s*80, NY+125, 70, 16, .3); }
   } },
-  { id:"hoodie", label:"Cat Monogram Hoodie", draw(c){
-      c.fillStyle = "#E9762B"; c.fillRect(0,0,SW,SH);
-      const t = 110; for (let row=0, y=NY-330; y<SH+t; y+=t*.62, row++) for (let x=(row%2? t/2:0)-t; x<SW+t; x+=t) { if (row%2) catHead(c, x, y, 26, "#F6C9A0"); else { c.fillStyle = "#F6C9A0"; for (const [dx,dy] of [[-10,0],[10,0],[0,-10],[0,10]]) { c.beginPath(); c.arc(x+dx, y+dy, 4, 0, 7); c.fill(); } } }
-      // ribbed cuffs and hem bands live below the frame; the hood and zip carry the look
-      hoodRing(c, "#C95A1A", "rgba(255,255,255,.25)");
-      zipper(c, "#FBF4EA"); strings(c, "#FBF4EA", "#D8D2C8");
+  { id:"hoodie", label:"Camel Jacquard Hoodie", draw(c){
+      // camel woven canvas with a tonal brown cat-head jacquard, white zip, tan cords
+      c.fillStyle = "#C8A07A"; c.fillRect(0,0,SW,SH);
+      for (let y=0; y<SH; y+=4) for (let x=(y/4)%2*2; x<SW; x+=4) { c.fillStyle = "rgba(255,240,215,.16)"; c.fillRect(x,y,2,2); }
+      for (let y=2; y<SH; y+=4) for (let x=((y-2)/4)%2*2+2; x<SW; x+=4) { c.fillStyle = "rgba(90,55,25,.12)"; c.fillRect(x,y,2,2); }
+      const t = 112; for (let row=0, y=NY-360; y<SH+t; y+=t*.6, row++) for (let x=(row%2? t/2:0)-t; x<SW+t; x+=t) { if (row%2) catHead(c, x, y, 30, "#8E5D37"); else { for (const [dx,dy] of [[-12,0],[12,0],[0,-12],[0,12]]) { c.fillStyle = "#8E5D37"; c.fillRect(x+dx-4, y+dy-4, 8, 8); } } }
+      grain(c, 14, 8);
+      sheen(c, 240, 700, 220, 480, .08);
+      hood(c, "#A87A52", "rgba(255,240,220,.35)");
+      zipper(c, "#F4EEE4", "#E3DCD0"); cords(c, "#D9B48A", ["#9AA0A6","#EEF0F2"]);
   } },
-  { id:"bomber", label:"Olive Bomber", draw(c){
-      c.fillStyle = "#7D8F6A"; c.fillRect(0,0,SW,SH);
-      c.strokeStyle = "rgba(30,40,20,.25)"; c.lineWidth = 3; for (let x=-SH; x<SW+SH; x+=64){ c.beginPath(); c.moveTo(x,0); c.lineTo(x+SH,SH); c.stroke(); c.beginPath(); c.moveTo(x,0); c.lineTo(x-SH,SH); c.stroke(); }
-      const g = c.createLinearGradient(0,0,SW,0); g.addColorStop(0,"rgba(0,0,0,.18)"); g.addColorStop(.5,"rgba(255,255,255,.12)"); g.addColorStop(1,"rgba(0,0,0,.18)"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
+  { id:"bomber", label:"Sage Satin Bomber", draw(c){
+      // sage satin with broad sheen bands, tonal jacquard motifs, striped knit collar, antique snaps
+      const g = c.createLinearGradient(0,0,SW,0); g.addColorStop(0,"#6F8768"); g.addColorStop(.35,"#9AB394"); g.addColorStop(.55,"#88A182"); g.addColorStop(.8,"#A3BB9D"); g.addColorStop(1,"#6A8264"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
+      const r = rng(13);
+      for (let row=0, y=NY+40; y<SH+80; y+=74, row++) for (let x=(row%2? 37:0)+10; x<SW; x+=74) { const k = r(); if (k < .34) star5(c, x, y, 11, "rgba(235,245,225,.30)"); else if (k < .67) catHead(c, x, y, 12, "rgba(40,60,35,.28)"); else paw(c, x, y, 11, "rgba(235,245,225,.24)"); }
+      sheen(c, 250, 720, 120, 520, .20); sheen(c, 560, 680, 90, 480, .14);
+      grain(c, 8, 14);
       eraseHead(c, -6);
-      // ribbed collar with stripes
-      for (const [w,col] of [[56,"#5E6B4E"],[40,"#E9E4D6"],[30,"#4B6A2E"],[16,"#E9E4D6"]]) { c.strokeStyle = col; c.lineWidth = w; c.beginPath(); c.moveTo(CX-190, NY+70); c.quadraticCurveTo(CX, NY-40, CX+190, NY+60); c.stroke(); }
-      c.strokeStyle = "rgba(0,0,0,.18)"; c.lineWidth = 2; for (let i=-180; i<=180; i+=10) { c.beginPath(); c.moveTo(CX+i, NY+10 + Math.abs(i)*.3 - 26); c.lineTo(CX+i, NY+10 + Math.abs(i)*.3 + 26); c.stroke(); }
-      c.fillStyle = "rgba(30,40,20,.25)"; c.fillRect(CX-3, NY+30, 6, SH);
-      for (let y=NY+90; y<SH; y+=112) button(c, CX+26, y, 13, "#8A6B3E");
+      rib(c, () => { c.beginPath(); c.moveTo(CX-196, NY+72); c.quadraticCurveTo(CX, NY-44, CX+196, NY+62); }, 60, [[1,"#6E7E68"],[.72,"#E7E3D8"],[.52,"#5C7A3E"],[.3,"#E7E3D8"],[.12,"#6E7E68"]], 1);
+      c.strokeStyle = "rgba(0,0,0,.16)"; c.lineWidth = 2; for (let i=-186; i<=186; i+=7) { const y = NY+14 + (i*i)/1450 - 34; c.beginPath(); c.moveTo(CX+i, y); c.lineTo(CX+i, y+56); c.stroke(); }
+      c.fillStyle = "rgba(40,55,35,.25)"; c.fillRect(CX-4, NY+34, 8, SH); shade(c, CX+8, 900, 30, 500, .12);
+      for (let y=NY+92; y<SH; y+=112) snap(c, CX+26, y, 14, ["#E8D3A8","#A27E48","#5B4524"]);
   } },
-  { id:"track", label:"Track Jacket", draw(c){
-      c.fillStyle = "#EDE7DC"; c.fillRect(0,0,SW,SH);
-      c.fillStyle = "#1F2A44"; c.beginPath(); c.moveTo(0,0); c.lineTo(SW,0); c.lineTo(SW,420); c.lineTo(0,640); c.closePath(); c.fill();   // asymmetric diagonal split
-      c.strokeStyle = "#FA691D"; c.lineWidth = 16; c.beginPath(); c.moveTo(0,650); c.lineTo(SW,430); c.stroke();
-      c.strokeStyle = "#FFFFFF"; c.lineWidth = 4; c.beginPath(); c.moveTo(0,670); c.lineTo(SW,450); c.stroke();
+  { id:"track", label:"Leather Track Jacket", draw(c){
+      // deep teal leather yoke over pale grey nylon, stand collar with knit lining, embroidered patch
+      c.fillStyle = "#C3C6C0"; c.fillRect(0,0,SW,SH); sheen(c, 230, 900, 200, 400, .25); sheen(c, 560, 860, 160, 380, .18);
+      c.save(); c.beginPath(); c.moveTo(0,0); c.lineTo(SW,0); c.lineTo(SW,430); c.lineTo(0,650); c.closePath(); c.clip();
+      const lg = c.createLinearGradient(0,NY,SW,700); lg.addColorStop(0,"#2C4F48"); lg.addColorStop(.5,"#1F3D37"); lg.addColorStop(1,"#183230"); c.fillStyle = lg; c.fillRect(0,0,SW,SH);
+      sheen(c, 250, 470, 150, 70, .22); sheen(c, 540, 450, 110, 60, .16);
+      c.restore();
+      grain(c, 12, 31);
+      c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 4; c.beginPath(); c.moveTo(0,652); c.lineTo(SW,432); c.stroke();
+      c.strokeStyle = "rgba(255,255,255,.35)"; c.lineWidth = 1.5; c.setLineDash([6,5]); c.beginPath(); c.moveTo(0,662); c.lineTo(SW,442); c.stroke(); c.setLineDash([]);
       eraseHead(c, -30);
-      // stand collar
-      c.fillStyle = "#1F2A44"; c.beginPath(); c.moveTo(CX-150, NY+30); c.quadraticCurveTo(CX, NY-70, CX+150, NY+20); c.lineTo(CX+150, NY+60); c.quadraticCurveTo(CX, NY-20, CX-150, NY+70); c.closePath(); c.fill();
-      c.strokeStyle = "#FA691D"; c.lineWidth = 5; c.beginPath(); c.moveTo(CX-150, NY+50); c.quadraticCurveTo(CX, NY-45, CX+150, NY+40); c.stroke();
-      zipper(c, "#C9CCD3", NY-10);
-      // chest badge: katakana mi in a circle
-      c.fillStyle = "#FA691D"; c.beginPath(); c.arc(CX+150, NY+150, 38, 0, 7); c.fill(); c.strokeStyle = "#FFFFFF"; c.lineWidth = 7; c.lineCap = "round"; for (const [y,w] of [[-14,30],[0,34],[15,38]]) { c.beginPath(); c.moveTo(CX+150-w/2, NY+150+y-4); c.lineTo(CX+150+w/2, NY+150+y+4); c.stroke(); }
+      // stand collar: leather outside, striped knit lining peeking at the top
+      c.fillStyle = "#24443E"; c.beginPath(); c.moveTo(CX-150, NY+28); c.quadraticCurveTo(CX, NY-74, CX+150, NY+18); c.lineTo(CX+152, NY+66); c.quadraticCurveTo(CX, NY-24, CX-152, NY+76); c.closePath(); c.fill();
+      for (const [dy,col] of [[0,"#E9EDE8"],[8,"#24443E"],[14,"#E9EDE8"]]) { c.strokeStyle = col; c.lineWidth = 5; c.beginPath(); c.moveTo(CX-146, NY+30+dy); c.quadraticCurveTo(CX, NY-70+dy, CX+146, NY+20+dy); c.stroke(); }
+      sheen(c, CX-70, NY+10, 60, 16, .25);
+      zipper(c, "#1C3732", "#C8B27A", NY-12);
+      // raised white embroidered cat-head patch
+      shade(c, CX+152, NY+168, 46, 40, .4); catHead(c, CX+150, NY+160, 36, "#F3F1EA"); c.strokeStyle = "rgba(0,0,0,.12)"; c.lineWidth = 1.2; for (let i=-30; i<=30; i+=4) { c.beginPath(); c.moveTo(CX+150+i, NY+128); c.lineTo(CX+150+i, NY+190); c.stroke(); }
   } },
-  { id:"windbreaker", label:"Windbreaker", draw(c){
-      c.fillStyle = "#F07A2C"; c.fillRect(0,0,SW,SH);
-      c.fillStyle = "#FBF6EE"; c.fillRect(0, 470, SW, 150);                                              // colour-block chest band
-      c.strokeStyle = "rgba(0,0,0,.08)"; c.lineWidth = 1.5; for (let x=0; x<SW; x+=16){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,SH); c.stroke(); } for (let y=0; y<SH; y+=16){ c.beginPath(); c.moveTo(0,y); c.lineTo(SW,y); c.stroke(); }
-      const g = c.createLinearGradient(0,0,SW,SH); g.addColorStop(0,"rgba(255,255,255,.22)"); g.addColorStop(.5,"rgba(255,255,255,0)"); g.addColorStop(1,"rgba(0,0,0,.12)"); c.fillStyle = g; c.fillRect(0,0,SW,SH);
-      hoodRing(c, "#D9601C", "rgba(255,255,255,.3)");
-      zipper(c, "#FBF6EE"); strings(c, "#FBF6EE", "#E2DDD4");
-      paw(c, CX-150, 545, 26, "#F07A2C");
+  { id:"windbreaker", label:"Ripstop Windbreaker", draw(c){
+      // dark brown ripstop nylon with a scattered print of cat heads, paws and stars; white zip and trims
+      c.fillStyle = "#3E2B1E"; c.fillRect(0,0,SW,SH);
+      c.strokeStyle = "rgba(255,225,190,.07)"; c.lineWidth = 1.4; for (let x=0;x<SW;x+=15){ c.beginPath(); c.moveTo(x,0); c.lineTo(x,SH); c.stroke(); } for (let y=0;y<SH;y+=15){ c.beginPath(); c.moveTo(0,y); c.lineTo(SW,y); c.stroke(); }
+      const r = rng(17);
+      for (let row=0, y=-20; y<SH; y+=66, row++) for (let x=(row%2? 33:0)+14; x<SW; x+=66) { const k = r(), jx = x+(r()-.5)*10, jy = y+(r()-.5)*10; if (k < .3) catHead(c, jx, jy, 12, "#EFE6D2"); else if (k < .55) star5(c, jx, jy, 12, "#E2A43A"); else if (k < .8) paw(c, jx, jy, 11, "#F07A2C"); else { c.fillStyle = "rgba(200,160,110,.35)"; c.beginPath(); c.arc(jx, jy, 5, 0, 7); c.fill(); } }
+      sheen(c, 240, 700, 170, 520, .14); sheen(c, 560, 650, 120, 460, .10);
+      for (let i=0;i<14;i++){ const y = 380 + i*70; c.strokeStyle = "rgba(0,0,0,.18)"; c.lineWidth = 6; c.beginPath(); c.moveTo(0, y); c.quadraticCurveTo(SW/2, y + 30, SW, y - 10); c.stroke(); }
+      grain(c, 10, 18);
+      hood(c, "#2E2016", "rgba(255,240,220,.25)");
+      c.strokeStyle = "#F4EFE6"; c.lineWidth = 6; c.beginPath(); c.ellipse(FACE.x, FACE.y, FACE.rx+4, FACE.ry+4, 0, 0, 7); c.stroke();
+      zipper(c, "#F4EFE6", "#E2DCD1");
+      for (const s of [-1,1]) { c.strokeStyle = "#F4EFE6"; c.lineWidth = 7; c.beginPath(); c.moveTo(CX + s*210, NY+200); c.lineTo(CX + s*222, NY+420); c.stroke(); }
   } },
 ];
 
@@ -651,7 +684,7 @@ function clothingLayer(item){
 }
 
 let current = "none";
-try { const saved = localStorage.getItem("mnero-outfit2"); if (CLOTHES.some(c => c.id === saved)) current = saved; } catch(e){}
+try { const saved = localStorage.getItem("mnero-outfit3"); if (CLOTHES.some(c => c.id === saved)) current = saved; } catch(e){}
 
 function paint(c, item, size){
   const k = size / 1000;
@@ -682,7 +715,7 @@ for (const item of CLOTHES) {
   const b = el("button",{className:"outfit",type:"button"}); b.dataset.id = item.id; b.setAttribute("role","radio");
   const t = document.createElement("canvas"); t.width = t.height = 240; thumbs[item.id] = t;
   b.append(t, el("span",{textContent:item.label}));
-  b.addEventListener("click", () => { current = item.id; try { localStorage.setItem("mnero-outfit2", current); } catch(e){} sync(); });
+  b.addEventListener("click", () => { current = item.id; try { localStorage.setItem("mnero-outfit3", current); } catch(e){} sync(); });
   grid.append(b);
 }
 group.append(grid);
