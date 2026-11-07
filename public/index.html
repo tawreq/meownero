@@ -207,7 +207,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
     <a class="brand" href="#top" aria-label="Meownero home"><img src="logo.webp" alt="ミャウネロ Meownero $MNERO" width="720" height="277"></a>
     <nav class="nav" aria-label="Main">
       <a href="#memes" id="nav-memes">Memes</a>
-      <a href="#maker" id="nav-maker">Meme Generator</a>
+      <a href="#maker" id="nav-maker">PFP Studio</a>
     </nav>
   </div>
 </header>
@@ -290,11 +290,12 @@ footer p{margin:0;font-size:13px;max-width:60ch}
       <div class="sec-head">
         <div>
           <p class="kicker" lang="ja">ミーム作成</p>
-          <h2 id="maker-h">Meme Generator</h2>
-          <p class="sec-sub">Dress the ghost in five steps: outfit, hat, bling, sunglasses, then your caption. Save a 1000 × 1000 PNG ready for X.</p>
+          <h2 id="maker-h">PFP Studio</h2>
+          <p class="sec-sub">Create your Meownero PFP: choose an outfit, customize the background, add accessories, and export your image.</p>
         </div>
       </div>
-      <div class="studio">
+      <div class="pfp-integrated"><iframe title="Meownero PFP Studio" src="/pfp/" loading="lazy" style="width:100%;height:1050px;border:0;border-radius:18px;background:#f7f6f3;display:block" id="pfp-studio-embed"></iframe></div>
+      <div class="studio" style="display:none" aria-hidden="true">
         <div class="stage">
           <div class="canvas-frame" id="frame" tabindex="0" aria-label="Meme preview. Drag to move the selected item, or use the arrow keys."><canvas id="cv" width="1000" height="1000" role="img" aria-label="Your Meownero meme"></canvas></div>
           <div class="stage-actions">
