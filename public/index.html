@@ -565,7 +565,7 @@ const FRAME = { s:1.25, ox:500-383*1.25, oy:100 };   // close-up of ghost.webp (
    Items with { sample: true, draw } are drawn stand-ins until the real images arrive. */
 const STEPS = [
   { key:"outfit", title:"Outfit", jp:"服", hint:"Pick the base look for the ghost." , items:[
-      { id:"plain", label:"Plain", src:"ghost.webp", outline:"ghost-outline.webp" },
+      { id:"plain", label:"Base image", full:"/pfp/base%20image.png" },
       { id:"glossy-puffer", label:"Glossy Puffer", full:"outfit-puffer.webp" },
     ] },
   { key:"hat", title:"Hat", jp:"帽子", hint:"Drag the hat on the preview to place it.", at:{ x:500, y:150, w:440 }, items:[
@@ -622,7 +622,7 @@ function paint(c, size, opts = {}){
   const outfit = STEPS[0].items.find(i => i.id === (opts.outfit || S.outfit)) || STEPS[0].items[0];
   const full = outfit.full ? getImg(outfit.full) : null;
   if (full) { c.drawImage(full, 0, 0, 1000, 1000); }
-  const base = full ? null : getImg(outfit.src), outline = !full && outfit.outline ? getImg(outfit.outline) : null;
+  const base = !full && outfit.src ? getImg(outfit.src) : null, outline = !full && outfit.outline ? getImg(outfit.outline) : null;
   if (base) {
     c.setTransform(k*FRAME.s,0,0,k*FRAME.s,k*FRAME.ox,k*FRAME.oy);
     c.save(); c.shadowColor = "rgba(40,20,0,.22)"; c.shadowBlur = 36*k; c.shadowOffsetY = 14*k; c.drawImage(outline || base, 0, 0, 756, 1561); c.restore();
