@@ -30,11 +30,36 @@ function loadChain(index){
  img.onerror=()=>{if(state.Chains===index+1)document.querySelector('#notice').textContent='This chain could not load. Choose another or try again.'};
  img.src=chains[index].src;return img;
 }
+// Cache a foreshortened necklace: shoulder links turn away from the viewer,
+// while the lower pendant retains its height and readable lettering.
+const fittedChains=new Map();
+function fitChain(img,index){
+ if(fittedChains.has(index))return fittedChains.get(index);
+ const layer=document.createElement('canvas');layer.width=layer.height=1024;
+ const g=layer.getContext('2d'),w=img.naturalWidth,h=img.naturalHeight,rows=400;
+ for(let i=0;i<rows;i++){
+  const v=i/rows,next=(i+1)/rows;
+  const project=y=>.28+Math.min(y,.76)*.40+Math.max(0,y-.76)*.80;
+  const width=1024*(.88+.12*Math.sin(Math.min(1,v/.55)*Math.PI/2));
+  // Feather the cut ends so they disappear into the neckline instead of ending abruptly.
+  g.globalAlpha=Math.min(1,Math.max(0,(v-.025)/.12));
+  g.drawImage(img,0,v*h,w,h/rows,(1024-width)/2,project(v)*1024,width,(project(next)-project(v))*1024+.6);
+ }
+ g.globalAlpha=1;
+ // The upper links are shaded as they curve around the sides of the neck.
+ g.globalCompositeOperation='source-atop';
+ const shade=g.createLinearGradient(0,1024*.28,0,1024*.55);
+ shade.addColorStop(0,'rgba(24,15,8,.38)');shade.addColorStop(.45,'rgba(24,15,8,.10)');shade.addColorStop(1,'rgba(24,15,8,0)');
+ g.fillStyle=shade;g.fillRect(0,0,1024,1024);g.globalCompositeOperation='source-over';
+ fittedChains.set(index,layer);return layer;
+}
 function drawChain(){
  if(state.Chains<1)return;
- const img=loadChain(state.Chains-1);if(!img.complete||!img.naturalWidth)return;
+ const index=state.Chains-1,img=loadChain(index);if(!img.complete||!img.naturalWidth)return;
+ const fitted=fitChain(img,index);
  ctx.save();ctx.translate(state.chainX,state.chainY);ctx.rotate(state.chainRotation*Math.PI/180);
- ctx.drawImage(img,-state.chainSize/2,-state.chainSize/2,state.chainSize,state.chainSize);ctx.restore();
+ ctx.shadowColor='rgba(40,23,10,.30)';ctx.shadowBlur=state.chainSize*.009;ctx.shadowOffsetY=state.chainSize*.007;
+ ctx.drawImage(fitted,-state.chainSize/2,-state.chainSize/2,state.chainSize,state.chainSize);ctx.restore();
 }
 
 const watchImages=new Map();
