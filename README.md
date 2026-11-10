@@ -11,6 +11,10 @@ The depot has four sections, in this order: **References**, **Images**, **GIFs**
   (index `depot/index-v2.json`) and can be removed from the Admin panel.
 - There is no automatic X sync; it was switched off on 2026-11-10.
 
+## Meme generator outfits
+Jackets live in `public/outfits/` as 1000 × 1000 WebP files framed like the plain ghost; each one has a line in the
+`STEPS` outfit list in `public/index.html` (id, label, file).
+
 ## Environment variables
 | Name | What |
 | --- | --- |

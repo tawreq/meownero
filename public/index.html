@@ -600,9 +600,34 @@ const FRAME = { s:1.25, ox:500-383*1.25, oy:100 };   // close-up of ghost.webp (
    sized to the step's default width, then the user can drag, resize and rotate it.
    Items with { sample: true, draw } are drawn stand-ins until the real images arrive. */
 const STEPS = [
-  { key:"outfit", title:"Outfit", jp:"服", hint:"Pick the base look for the ghost." , items:[
+  { key:"outfit", title:"Outfit", jp:"服", hint:"Pick a jacket for the ghost, or keep it plain." , items:[
       { id:"plain", label:"Plain", src:"ghost.webp", outline:"ghost-outline.webp" },
-      { id:"glossy-puffer", label:"Glossy Puffer", full:"outfit-puffer.webp" },
+      { id:"black-varsity", label:"Black Varsity", full:"outfits/jacket-01.webp" },
+      { id:"red-racer", label:"Red Racer", full:"outfits/jacket-02.webp" },
+      { id:"tan-monogram", label:"Tan Monogram", full:"outfits/jacket-03.webp" },
+      { id:"grey-monogram", label:"Grey Monogram", full:"outfits/jacket-04.webp" },
+      { id:"black-monogram-hoodie", label:"Black Monogram Hoodie", full:"outfits/jacket-05.webp" },
+      { id:"cream-monogram-puffer", label:"Cream Monogram Puffer", full:"outfits/jacket-06.webp" },
+      { id:"brown-monogram-puffer", label:"Brown Monogram Puffer", full:"outfits/jacket-07.webp" },
+      { id:"black-monogram", label:"Black Monogram", full:"outfits/jacket-08.webp" },
+      { id:"navy-track-jacket", label:"Navy Track Jacket", full:"outfits/jacket-09.webp" },
+      { id:"tan-puffer", label:"Tan Puffer", full:"outfits/jacket-10.webp" },
+      { id:"black-quilted", label:"Black Quilted", full:"outfits/jacket-11.webp" },
+      { id:"red-shell", label:"Red Shell", full:"outfits/jacket-12.webp" },
+      { id:"white-racer", label:"White Racer", full:"outfits/jacket-13.webp" },
+      { id:"black-moto-leather", label:"Black Moto Leather", full:"outfits/jacket-14.webp" },
+      { id:"camo-jacket", label:"Camo Jacket", full:"outfits/jacket-15.webp" },
+      { id:"olive-varsity", label:"Olive Varsity", full:"outfits/jacket-16.webp" },
+      { id:"grey-lime-track", label:"Grey & Lime Track", full:"outfits/jacket-17.webp" },
+      { id:"tan-monogram-puffer", label:"Tan Monogram Puffer", full:"outfits/jacket-18.webp" },
+      { id:"navy-patch-racer", label:"Navy Patch Racer", full:"outfits/jacket-19.webp" },
+      { id:"black-satin-varsity", label:"Black Satin Varsity", full:"outfits/jacket-20.webp" },
+      { id:"glossy-puffer", label:"Glossy Puffer", full:"outfits/jacket-21.webp" },
+      { id:"red-puffer", label:"Red Puffer", full:"outfits/jacket-22.webp" },
+      { id:"denim-jacket", label:"Denim Jacket", full:"outfits/jacket-23.webp" },
+      { id:"teal-two-tone", label:"Teal Two-Tone", full:"outfits/jacket-24.webp" },
+      { id:"black-monogram-puffer", label:"Black Monogram Puffer", full:"outfits/jacket-25.webp" },
+      { id:"camel-puffer", label:"Camel Puffer", full:"outfits/jacket-26.webp" },
     ] },
   { key:"hat", title:"Hat", jp:"帽子", hint:"Drag the hat on the preview to place it.", at:{ x:500, y:150, w:440 }, items:[
       { id:"none", label:"No hat" },
@@ -692,7 +717,12 @@ function thumbFor(step, item){
   const key = step.key + ":" + item.id;
   const t = thumbs[key] || (thumbs[key] = Object.assign(document.createElement("canvas"), { width:220, height:220 }));
   const c = t.getContext("2d"); c.setTransform(1,0,0,1,0,0); c.clearRect(0,0,220,220);
-  if (step.key === "outfit") {
+  if (step.key === "outfit" && item.full) {
+    // Crop straight from the outfit image (same framing as the canvas); cheaper than painting a 1000px canvas per thumb.
+    const img = getImg(item.full);
+    c.fillStyle = PAPER; c.fillRect(0,0,220,220);
+    if (img) { const k = img.naturalWidth / 1000; c.drawImage(img, 90*k, 170*k, 820*k, 820*k, 0, 0, 220, 220); }
+  } else if (step.key === "outfit") {
     const big = document.createElement("canvas"); big.width = big.height = 1000; paint(big.getContext("2d"), 1000, { outfit:item.id, layers:{}, noText:true });
     c.drawImage(big, 120, 60, 760, 760, 0, 0, 220, 220);
   } else if (item.id === "none") {
@@ -728,7 +758,6 @@ function render(){
     }
     panel.append(grid);
     if (step.items.some(i => i.sample)) panel.append(el("p",{className:"hint",textContent:"Samples for now. The real collection is coming soon."}));
-    if (step.key === "outfit" && step.items.length === 1) panel.append(el("p",{className:"hint",textContent:"More outfits are coming soon."}));
     const L = S.layers[step.key];
     if (L) {
       const box = el("div",{className:"adjust"});
