@@ -564,7 +564,7 @@ async function loadLibrary(){
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     library = (j.memes || []).filter(m => typeof m.file === "string" && /^[a-z]+\/[A-Za-z0-9._-]+$/.test(m.file) && CATS[m.kind])
-      .map(m => ({ id:"lib-"+m.file, url:"/memes/"+m.file, kind:m.kind, caption:m.caption||"", source:"library" }));
+      .map(m => ({ id:"lib-"+m.file, url:"/memes/"+m.file, kind:m.kind, caption:m.caption||"", handle:m.handle||"", xUrl:m.xUrl||"", source:"library" }));
   } catch (e) { library = []; return false; }
   return true;
 }
