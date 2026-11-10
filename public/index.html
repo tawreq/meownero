@@ -558,7 +558,7 @@ $("#logout-btn").addEventListener("click", () => { adminKey = ""; try { sessionS
 // The curated collection ships with the site (public/memes/); admin uploads come from /api/memes.
 async function loadLibrary(){
   try {
-    const r = await fetch("/memes/manifest.json");
+    const r = await fetch("/memes/manifest.json", { cache: "no-cache" });
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
     library = (j.memes || []).filter(m => typeof m.file === "string" && /^[a-z]+\/[A-Za-z0-9._-]+$/.test(m.file) && CATS[m.kind])
