@@ -1,25 +1,25 @@
-// Rebuilds public/memes/manifest.json from the files in public/memes/{images,gifs,videos}.
-// The category comes from the file type, so a GIF dropped in images/ still lands under GIFs.
+// Rebuilds public/memes/manifest.json from the files in public/memes/{references,images,gifs,videos}.
+// The folder decides the section, in that order; files of an unsupported type are skipped.
 //
 //   node scripts/build-manifest.mjs
 import { readdirSync, writeFileSync, statSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join } from "node:path";
 
 const ROOT = new URL("../public/memes/", import.meta.url).pathname;
-const KIND = { ".jpg": "image", ".jpeg": "image", ".png": "image", ".webp": "image", ".gif": "gif", ".mp4": "video", ".webm": "video" };
-const ORDER = { image: 0, gif: 1, video: 2 };
+const DIRS = { references: "reference", images: "image", gifs: "gif", videos: "video" };
+const ORDER = { reference: 0, image: 1, gif: 2, video: 3 };
+const OK = { reference: /\.(jpe?g|png|webp|gif)$/i, image: /\.(jpe?g|png|webp)$/i, gif: /\.gif$/i, video: /\.(mp4|webm)$/i };
 
 const memes = [];
-for (const dir of ["images", "gifs", "videos"]) {
+for (const [dir, kind] of Object.entries(DIRS)) {
   let names = [];
   try { names = readdirSync(join(ROOT, dir)); } catch { continue; }
   for (const name of names) {
-    const kind = KIND[extname(name).toLowerCase()];
-    if (!kind || !statSync(join(ROOT, dir, name)).isFile()) continue;
+    if (!OK[kind].test(name) || !statSync(join(ROOT, dir, name)).isFile()) continue;
     memes.push({ file: `${dir}/${name}`, kind });
   }
 }
 memes.sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || a.file.localeCompare(b.file, "en", { numeric: true }));
 writeFileSync(join(ROOT, "manifest.json"), JSON.stringify({ memes }, null, 2) + "\n");
 const n = k => memes.filter(m => m.kind === k).length;
-console.log(`manifest.json: ${n("image")} images, ${n("gif")} GIFs, ${n("video")} videos`);
+console.log(`manifest.json: ${n("reference")} references, ${n("image")} images, ${n("gif")} GIFs, ${n("video")} videos`);

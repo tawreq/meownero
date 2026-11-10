@@ -246,6 +246,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
           <span class="count" id="meme-count"></span>
           <div class="chips" role="group" aria-label="Filter memes">
             <button class="chip" data-filter="all" aria-pressed="true">All</button>
+            <button class="chip" data-filter="reference" aria-pressed="false">References</button>
             <button class="chip" data-filter="image" aria-pressed="false">Images</button>
             <button class="chip" data-filter="gif" aria-pressed="false">GIFs</button>
             <button class="chip" data-filter="video" aria-pressed="false">Videos</button>
@@ -286,6 +287,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
 
       <p class="status" id="wall-status" role="status"></p>
       <div id="depot">
+        <section class="cat" data-cat="reference" aria-labelledby="cat-reference"><div class="cat-head"><h3 id="cat-reference">References</h3><span class="cat-n"></span></div><div class="wall"></div></section>
         <section class="cat" data-cat="image" aria-labelledby="cat-image"><div class="cat-head"><h3 id="cat-image">Images</h3><span class="cat-n"></span></div><div class="wall"></div></section>
         <section class="cat" data-cat="gif" aria-labelledby="cat-gif"><div class="cat-head"><h3 id="cat-gif">GIFs</h3><span class="cat-n"></span></div><div class="wall"></div></section>
         <section class="cat" data-cat="video" aria-labelledby="cat-video"><div class="cat-head"><h3 id="cat-video">Videos</h3><span class="cat-n"></span></div><div class="wall"></div></section>
@@ -371,7 +373,7 @@ io.observe($("#memes")); io.observe($("#maker"));
    ========================================================= */
 const depot = $("#depot"), wallEmpty = $("#wall-empty"), wallStatus = $("#wall-status"), countEl = $("#meme-count");
 let library = [], uploads = [], memes = [], filter = "all", canDelete = false;
-const CATS = { image:"images", gif:"GIFs", video:"videos" };
+const CATS = { reference:"references", image:"images", gif:"GIFs", video:"videos" };
 let adminKey = ""; try { adminKey = sessionStorage.getItem("mnero-admin") || ""; } catch(e){}
 
 function safeXUrl(u){ try { const x = new URL(u); if (x.protocol === "https:" && /(^|\.)(x\.com|twitter\.com)$/i.test(x.hostname)) return x.href; } catch(e){} return null; }

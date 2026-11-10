@@ -1,6 +1,26 @@
 {
   "memes": [
     {
+      "file": "references/reference-01.jpg",
+      "kind": "reference"
+    },
+    {
+      "file": "references/reference-02.png",
+      "kind": "reference"
+    },
+    {
+      "file": "references/reference-03.png",
+      "kind": "reference"
+    },
+    {
+      "file": "references/reference-04.png",
+      "kind": "reference"
+    },
+    {
+      "file": "references/reference-05.png",
+      "kind": "reference"
+    },
+    {
       "file": "images/meownero-01.jpg",
       "kind": "image"
     },
@@ -22,6 +42,26 @@
     },
     {
       "file": "images/meownero-06.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-07.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-08.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-09.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-10.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-11.jpg",
       "kind": "image"
     },
     {
@@ -73,6 +113,10 @@
       "kind": "gif"
     },
     {
+      "file": "gifs/meownero-13.gif",
+      "kind": "gif"
+    },
+    {
       "file": "videos/boxing-final.mp4",
       "kind": "video"
     },
@@ -82,6 +126,10 @@
     },
     {
       "file": "videos/lvbaby.mp4",
+      "kind": "video"
+    },
+    {
+      "file": "videos/meowdmc30sec.mp4",
       "kind": "video"
     },
     {
