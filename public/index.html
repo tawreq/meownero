@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Meownero ($MNERO): the meme depot and ghost-cat PFP generator. Secrets stay secret.">
+<meta name="description" content="Meownero ($MNERO): the meme depot. Secrets stay secret.">
 <meta property="og:title" content="Meownero ($MNERO)">
-<meta property="og:description" content="The Meownero meme depot and PFP generator.">
+<meta property="og:description" content="The Meownero meme depot.">
 <meta property="og:image" content="/ghost-sticker.webp">
 <link rel="icon" href="/ghost.webp">
 <style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -30,6 +30,7 @@
   --gutter-r:max(16px, env(safe-area-inset-right, 0px));
 }
 *{box-sizing:border-box}
+[hidden]{display:none!important}
 html{scroll-behavior:smooth}
 @media (prefers-reduced-motion: reduce){html{scroll-behavior:auto}}
 body{background:var(--paper);color:var(--ink);font-family:var(--body);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
@@ -215,7 +216,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
     <a class="brand" href="#top" aria-label="Meownero home"><img src="logo2.webp" alt="ミャウネロ Meownero" width="900" height="430"></a>
     <nav class="nav" aria-label="Main">
       <a href="#memes" id="nav-memes">Memes</a>
-      <a href="#maker" id="nav-maker">Meme Generator</a>
+      <a href="#maker" id="nav-maker" hidden>Meme Generator</a>
     </nav>
   </div>
 </header>
@@ -300,7 +301,8 @@ footer p{margin:0;font-size:13px;max-width:60ch}
     </div>
   </section>
 
-  <section class="block pfp" id="maker" aria-labelledby="maker-h">
+  <!-- Meme generator hidden for now: remove `hidden` here and on #nav-maker to bring it back. -->
+  <section class="block pfp" id="maker" aria-labelledby="maker-h" hidden>
     <div class="wrap">
       <div class="sec-head">
         <div>
