@@ -14,7 +14,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&family=Dela+Gothic+One&family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Maru+Gothic:wght@700;900&family=DM+Mono:wght@400;500&display=swap">
 <style>
-/* Layout: brand-paper page, centered sticker hero, orange ticker band, masonry meme wall, two-column PFP studio.
+/* Layout: brand-paper page, centered sticker hero, orange divider bar, masonry meme wall, two-column PFP studio.
    Deliberately single light look: the brand is orange ink on off-white paper. */
 :root{
   color-scheme: light;
@@ -60,13 +60,8 @@ a{color:inherit}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(-1.2deg)}}
 @media (prefers-reduced-motion: reduce){.sticker img{animation:none}}
 
-/* Ticker */
-.ticker{background:var(--orange);color:#fff;overflow:hidden;border-block:3px solid var(--ink)}
-.ticker-track{display:flex;width:max-content;animation:tick 32s linear infinite}
-.ticker span{font-family:var(--display);font-size:clamp(17px,2vw,22px);white-space:nowrap;padding:12px 0;letter-spacing:.02em}
-.ticker span i{font-style:normal;color:var(--ink);padding:0 18px}
-@keyframes tick{to{transform:translateX(-50%)}}
-@media (prefers-reduced-motion: reduce){.ticker-track{animation:none}}
+/* Divider under the hero */
+.divider{height:clamp(14px,2vw,22px);background:var(--orange)}
 
 /* Sections */
 section.block .wrap{padding-block:clamp(48px,7vw,88px)}
@@ -199,8 +194,6 @@ dialog.lb::backdrop{background:rgba(23,22,26,.82)}
 .save-out img{display:block;width:180px;height:180px;border:2px solid var(--ink);border-radius:14px;margin-top:8px}
 
 footer{background:var(--ink);color:#CFCBC3}
-.admin-link{color:#8C887F;font-size:13px;text-decoration:none}
-.admin-link:hover{color:#fff;text-decoration:underline}
 .adder-top{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}
 #login-form{align-items:flex-end}
 footer .wrap{padding-block:32px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:16px}
@@ -231,9 +224,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
     </div>
   </section>
 
-  <div class="ticker" aria-hidden="true">
-    <div class="ticker-track" id="ticker"></div>
-  </div>
+  <div class="divider" aria-hidden="true"></div>
 
   <section class="block" id="memes" aria-labelledby="memes-h">
     <div class="wrap">
@@ -252,37 +243,6 @@ footer p{margin:0;font-size:13px;max-width:60ch}
             <button class="chip" data-filter="gif" aria-pressed="false">GIFs</button>
             <button class="chip" data-filter="video" aria-pressed="false">Videos</button>
           </div>
-        </div>
-      </div>
-
-      <div class="adder" id="admin-login" hidden>
-        <h3>Admin sign-in</h3>
-        <form id="login-form" class="row-actions">
-          <label class="f" style="flex:1 1 240px">Admin password <input id="login-pw" type="password" autocomplete="current-password" required></label>
-          <button class="btn primary" type="submit">Sign in</button>
-          <span class="msg" id="login-msg" role="status"></span>
-        </form>
-      </div>
-
-      <div class="adder" id="adder" hidden>
-        <div class="adder-top">
-          <h3>Add to the depot</h3>
-          <div class="row-actions"><button class="btn" id="logout-btn" type="button">Sign out</button></div>
-        </div>
-        <p class="note" id="sync-note"></p>
-        <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose images or videos to upload">
-          <strong>Drop images, GIFs or videos here</strong> or click to browse
-          <input type="file" id="file-in" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm" multiple hidden>
-        </div>
-        <div class="queue" id="queue"></div>
-        <div class="fields">
-          <label class="f">Caption <input id="f-cap" maxlength="140" placeholder="gm from the ghost"></label>
-          <label class="f">Creator <input id="f-handle" maxlength="40" placeholder="@handle"></label>
-          <label class="f">X post link <input id="f-url" maxlength="300" placeholder="https://x.com/…/status/…"></label>
-        </div>
-        <div class="row-actions">
-          <button class="btn primary" id="add-btn" disabled>Add to depot</button>
-          <span class="msg" id="add-msg" role="status"></span>
         </div>
       </div>
 
@@ -333,7 +293,6 @@ footer p{margin:0;font-size:13px;max-width:60ch}
   <div class="wrap">
     <img src="logo2.webp" alt="Meownero" width="900" height="430">
     <p>Meownero ($MNERO) is a community meme token. Nothing on this site is financial advice. Memes belong to their creators and link back to the original posts.</p>
-    <a href="#admin" class="admin-link" id="admin-link">Admin</a>
   </div>
 </footer>
 
@@ -351,7 +310,6 @@ footer p{margin:0;font-size:13px;max-width:60ch}
   </div>
 </dialog>
 
-<script src="blob-client.js"></script>
 <script>
 (() => {
 "use strict";
@@ -359,11 +317,6 @@ const $ = s => document.querySelector(s);
 const el = (tag, props = {}, kids = []) => { const n = document.createElement(tag); Object.assign(n, props); for (const k of kids) n.append(k); return n; };
 let toastT;
 function toast(text){ let t = $(".toast"); if(!t){ t = el("div",{className:"toast",role:"status"}); document.body.append(t);} t.textContent = text; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(()=>t.hidden=true, 2600); }
-
-/* ---------- Ticker ---------- */
-const tickBits = ["ひみつは、ひみつのまま。","SECRETS STAY SECRET","$MNERO","ミャウネロ","MEOWNERO"];
-const track = $("#ticker");
-for (let r = 0; r < 2; r++) { const s = el("span"); for (let i=0;i<3;i++){ for (const b of tickBits){ s.append(b); s.append(el("i",{textContent:"✕"})); } } track.append(s); }
 
 /* ---------- Nav highlight ---------- */
 const navMap = { memes: $("#nav-memes"), maker: $("#nav-maker") };
@@ -374,22 +327,14 @@ io.observe($("#memes")); io.observe($("#maker"));
    MEME DEPOT
    ========================================================= */
 const depot = $("#depot"), wallEmpty = $("#wall-empty"), wallStatus = $("#wall-status"), countEl = $("#meme-count");
-let library = [], uploads = [], memes = [], filter = "all", canDelete = false;
+let library = [], memes = [], filter = "all";
 const CATS = { reference:"references", image:"images", gif:"GIFs", video:"videos" };
-let adminKey = ""; try { adminKey = sessionStorage.getItem("mnero-admin") || ""; } catch(e){}
 
 function safeXUrl(u){ try { const x = new URL(u); if (x.protocol === "https:" && /(^|\.)(x\.com|twitter\.com)$/i.test(x.hostname)) return x.href; } catch(e){} return null; }
 function cleanHandle(h){ h = String(h||"").trim().replace(/^@+/,""); return /^[A-Za-z0-9_]{1,30}$/.test(h) ? h : ""; }
 function srcFor(m){ return m.url; }
-async function api(body){
-  const r = await fetch("/api/memes", { method:"POST", headers:{ "content-type":"application/json", "x-admin-key":adminKey }, body:JSON.stringify(body) });
-  const j = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(j.error || `Error ${r.status}`);
-  return j;
-}
-
 function renderWall(){
-  memes = [...uploads, ...library];
+  memes = library;
   countEl.textContent = memes.length ? `${memes.length} meme${memes.length===1?"":"s"} archived` : "";
   const loading = !!wallStatus.dataset.loading;
   wallEmpty.hidden = memes.length > 0 || loading;
@@ -436,18 +381,6 @@ function memeCard(m){
     }
     card.append(meta);
   }
-  if (canDelete && m.source === "upload") {
-    const del = el("button",{className:"del",type:"button",textContent:"Remove"});
-    let armed = false, armT;
-    del.addEventListener("click", async ev => {
-      ev.stopPropagation();
-      if (!armed) { armed = true; del.classList.add("confirm"); del.textContent = "Confirm remove"; armT = setTimeout(()=>{armed=false;del.classList.remove("confirm");del.textContent="Remove";},4000); return; }
-      clearTimeout(armT); del.disabled = true; del.textContent = "Removing…";
-      try { await api({ action:"delete", id:m.id }); uploads = uploads.filter(x => x.id !== m.id); renderWall(); toast("Removed from the depot"); }
-      catch(e){ del.disabled = false; del.textContent = "Remove"; toast("Couldn't remove it. Try again."); }
-    });
-    card.append(del);
-  }
   return card;
 }
 document.querySelectorAll("[data-filter]").forEach(b => b.addEventListener("click",()=>{
@@ -477,87 +410,8 @@ lb.addEventListener("click", e => { if (e.target === lb) closeLightbox(); });
 lb.addEventListener("close", () => { const v = $("#lb-media video"); if (v) v.pause(); });
 $("#lb-bg").addEventListener("click", () => { if (lbMeme) useMemeAsPhoto(lbMeme); });
 
-/* Uploader (admin only) */
-let pending = [];
-const queue = $("#queue"), addBtn = $("#add-btn"), addMsg = $("#add-msg");
-const OK_TYPES = ["image/png","image/jpeg","image/gif","image/webp","video/mp4","video/webm"];
-const MAX_MB = 100;
-function addFiles(files){
-  for (const f of files) {
-    if (!OK_TYPES.includes(f.type)) { addMsg.textContent = `${f.name} isn't a supported image or video.`; addMsg.className = "msg err"; continue; }
-    if (f.size > MAX_MB*1024*1024) { addMsg.textContent = `${f.name} is over ${MAX_MB} MB. Compress it and try again.`; addMsg.className = "msg err"; continue; }
-    pending.push(f);
-  }
-  drawQueue();
-}
-function drawQueue(){
-  queue.textContent = "";
-  pending.forEach(f => {
-    const q = el("div",{className:"q"});
-    const url = URL.createObjectURL(f);
-    q.append(f.type.startsWith("video") ? el("video",{src:url,muted:true}) : el("img",{src:url,alt:""}));
-    q.append(el("span",{textContent: kindOf(f)}));
-    q.title = f.name;
-    queue.append(q);
-  });
-  addBtn.disabled = !pending.length;
-  addBtn.textContent = pending.length > 1 ? `Add ${pending.length} to depot` : "Add to depot";
-}
-const drop = $("#drop"), fileIn = $("#file-in");
-drop.addEventListener("click",()=>fileIn.click());
-drop.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); fileIn.click(); }});
-fileIn.addEventListener("change",()=>{ addFiles(fileIn.files); fileIn.value=""; });
-["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over");}));
-["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over");}));
-drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));
-const kindOf = f => f.type.startsWith("video") ? "video" : f.type === "image/gif" ? "gif" : "image";
-const safeName = n => (String(n).toLowerCase().replace(/[^a-z0-9.]+/g,"-").replace(/^-+|-+$/g,"") || "meme").slice(-80);
-addBtn.addEventListener("click", async () => {
-  if (!pending.length || !adminKey) return;
-  const rawUrl = $("#f-url").value.trim();
-  if (rawUrl && !safeXUrl(rawUrl)) { addMsg.textContent = "That link isn't an x.com or twitter.com post. Fix it or leave it blank."; addMsg.className = "msg err"; return; }
-  addBtn.disabled = true;
-  const caption = $("#f-cap").value.trim().slice(0,140), handle = cleanHandle($("#f-handle").value), xUrl = rawUrl ? safeXUrl(rawUrl) : "";
-  let done = 0, failed = 0;
-  const batch = pending.slice();
-  for (const f of batch) {
-    addMsg.className = "msg"; addMsg.textContent = `Uploading ${done+failed+1} of ${batch.length}…`;
-    try {
-      const up = await BlobClient.upload("depot/media/" + safeName(f.name), f, { access:"public", handleUploadUrl:"/api/upload", headers:{ "x-admin-key":adminKey }, multipart: f.size > 8*1024*1024, contentType: f.type });
-      await api({ action:"add", items:[{ url:up.url, pathname:up.pathname, kind: kindOf(f), caption, handle, xUrl }] });
-      done++;
-      pending = pending.filter(p => p !== f);
-    } catch (e) {
-      failed++;
-      addMsg.className = "msg err"; addMsg.textContent = `${f.name}: ${e.message || "upload failed"}.`;
-    }
-  }
-  drawQueue();
-  if (!failed) { addMsg.className = "msg"; addMsg.textContent = `Added ${done} meme${done===1?"":"s"}.`; $("#f-cap").value = ""; $("#f-url").value = ""; }
-  else if (done) { addMsg.textContent += ` ${done} added; the rest are still in the queue.`; }
-  loadMemes(true);
-});
-
-/* Admin sign-in */
-const loginBox = $("#admin-login"), adder = $("#adder");
-function showAdmin(on){
-  adder.hidden = !on; loginBox.hidden = true; canDelete = on;
-  if (on) $("#empty-line").textContent = "Drop your first meme in the panel above.";
-  renderWall();
-}
-$("#sync-note").textContent = `Uploads go straight into the matching section: images, GIFs or videos, up to ${MAX_MB} MB each. Only memes you upload here can be removed here.`;
-function openLogin(){ if (adminKey) return showAdmin(true); loginBox.hidden = false; $("#login-pw").focus(); loginBox.scrollIntoView({block:"center"}); }
-$("#admin-link").addEventListener("click", e => { e.preventDefault(); location.hash = "memes"; openLogin(); });
-$("#login-form").addEventListener("submit", async e => {
-  e.preventDefault();
-  const msg = $("#login-msg"); msg.className = "msg"; msg.textContent = "Checking…";
-  adminKey = $("#login-pw").value;
-  try { await api({ action:"check" }); try { sessionStorage.setItem("mnero-admin", adminKey); } catch(e){} msg.textContent = ""; $("#login-pw").value = ""; showAdmin(true); }
-  catch (err) { adminKey = ""; msg.className = "msg err"; msg.textContent = "That password didn't work."; }
-});
-$("#logout-btn").addEventListener("click", () => { adminKey = ""; try { sessionStorage.removeItem("mnero-admin"); } catch(e){} showAdmin(false); toast("Signed out"); });
 /* Load the depot */
-// The curated collection ships with the site (public/memes/); admin uploads come from /api/memes.
+// The collection ships with the site in public/memes/, listed in manifest.json.
 async function loadLibrary(){
   try {
     const r = await fetch("/memes/manifest.json", { cache: "no-cache" });
@@ -568,25 +422,14 @@ async function loadLibrary(){
   } catch (e) { library = []; return false; }
   return true;
 }
-async function loadUploads(fresh){
-  try {
-    const r = await fetch("/api/memes" + (fresh ? `?t=${Date.now()}` : ""), { cache: fresh ? "no-store" : "default" });
-    if (!r.ok) throw new Error(r.status);
-    const j = await r.json();
-    uploads = (j.memes || []).filter(m => typeof m.url === "string" && /^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(m.url) && CATS[m.kind]);
-  } catch (e) { uploads = []; return false; }
-  return true;
-}
-async function loadMemes(fresh){
-  const [libOk] = await Promise.all([library.length ? true : loadLibrary(), loadUploads(fresh)]);
+async function loadMemes(){
+  const libOk = await loadLibrary();
   wallStatus.textContent = libOk ? "" : "The meme depot couldn't load right now. Refresh to try again.";
   delete wallStatus.dataset.loading;
   renderWall();
 }
 wallStatus.dataset.loading = "1"; wallStatus.textContent = "Loading memes…";
-loadMemes(false);
-if (adminKey) api({ action:"check" }).then(() => showAdmin(true)).catch(() => { adminKey = ""; try { sessionStorage.removeItem("mnero-admin"); } catch(e){} });
-if (location.hash === "#admin") openLogin();
+loadMemes();
 
 /* =========================================================
    MEME GENERATOR: outfit → hat → bling → sunglasses → text
