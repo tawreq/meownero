@@ -60,16 +60,8 @@ a{color:inherit}
 @keyframes bob{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(-1.2deg)}}
 @media (prefers-reduced-motion: reduce){.sticker img{animation:none}}
 
-/* Divider under the hero: orange band with a scrolling row of face cutouts.
-   face-cutout.webp is one tile (face + spacing, 260 × 164); it repeats as a background and the strip slides
-   left by exactly one tile, so the loop is seamless at any width. */
-.divider{--tile-h:clamp(48px,6vw,72px);--tile-w:calc(var(--tile-h) * 260 / 164);
-  height:calc(var(--tile-h) + clamp(16px,2vw,24px));background:var(--orange);overflow:hidden;position:relative}
-.divider::before{content:"";position:absolute;top:0;bottom:0;left:0;width:calc(100% + var(--tile-w));
-  background:url("face-cutout.webp") 0 50% / var(--tile-w) var(--tile-h) repeat-x;
-  animation:faces 9s linear infinite}
-@keyframes faces{to{transform:translateX(calc(-1 * var(--tile-w)))}}
-@media (prefers-reduced-motion: reduce){.divider::before{animation:none}}
+/* Divider under the hero */
+.divider{height:clamp(14px,2vw,22px);background:var(--orange)}
 
 /* Sections */
 section.block .wrap{padding-block:clamp(48px,7vw,88px)}
