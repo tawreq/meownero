@@ -98,6 +98,14 @@ h2{font-family:var(--display);font-weight:400;font-size:clamp(36px,6vw,64px);lin
 .meme:hover .del,.meme .del:focus-visible{opacity:1}
 .meme .del.confirm{background:#C62828;color:#fff;border-color:#C62828;opacity:1}
 @media (hover:none){.meme .del{opacity:1}}
+/* Depot categories */
+.cat{margin-top:clamp(28px,4vw,44px)}
+.cat:first-child{margin-top:0}
+.cat-head{display:flex;align-items:center;gap:14px;margin-bottom:18px}
+.cat-head h3{font-family:var(--display);font-weight:400;font-size:clamp(24px,3.4vw,34px);line-height:1;margin:0;letter-spacing:.02em}
+.cat-head .cat-n{font:500 13px/1 var(--mono);background:var(--orange);color:#fff;border:2px solid var(--ink);border-radius:999px;padding:5px 10px}
+.cat-head::after{content:"";flex:1;height:3px;background:var(--ink);border-radius:2px}
+.cat-empty{color:var(--ink-3);font-size:14px;margin:0}
 .broken{aspect-ratio:4/3;display:grid;place-items:center;color:var(--ink-3);font-size:13px;background:var(--paper-2)}
 
 .empty{border:2px dashed var(--line);border-radius:18px;padding:48px 20px;text-align:center;color:var(--ink-2);display:flex;flex-direction:column;align-items:center;gap:6px}
@@ -232,13 +240,14 @@ footer p{margin:0;font-size:13px;max-width:60ch}
         <div>
           <p class="kicker" lang="ja">ミーム倉庫</p>
           <h2 id="memes-h">Meme Depot</h2>
-          <p class="sec-sub">The best Meownero memes from X, kept in one place. Tap any meme to open it, see the original post, or download it.</p>
+          <p class="sec-sub">The best Meownero memes, kept in one place. Tap any meme to open it full size.</p>
         </div>
         <div style="display:grid;gap:10px;justify-items:end">
           <span class="count" id="meme-count"></span>
           <div class="chips" role="group" aria-label="Filter memes">
             <button class="chip" data-filter="all" aria-pressed="true">All</button>
             <button class="chip" data-filter="image" aria-pressed="false">Images</button>
+            <button class="chip" data-filter="gif" aria-pressed="false">GIFs</button>
             <button class="chip" data-filter="video" aria-pressed="false">Videos</button>
           </div>
         </div>
@@ -260,7 +269,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
         </div>
         <p class="note" id="sync-note"></p>
         <div class="drop" id="drop" tabindex="0" role="button" aria-label="Choose images or videos to upload">
-          <strong>Drop images or videos here</strong> or click to browse
+          <strong>Drop images, GIFs or videos here</strong> or click to browse
           <input type="file" id="file-in" accept="image/png,image/jpeg,image/gif,image/webp,video/mp4,video/webm" multiple hidden>
         </div>
         <div class="queue" id="queue"></div>
@@ -276,7 +285,11 @@ footer p{margin:0;font-size:13px;max-width:60ch}
       </div>
 
       <p class="status" id="wall-status" role="status"></p>
-      <div class="wall" id="wall"></div>
+      <div id="depot">
+        <section class="cat" data-cat="image" aria-labelledby="cat-image"><div class="cat-head"><h3 id="cat-image">Images</h3><span class="cat-n"></span></div><div class="wall"></div></section>
+        <section class="cat" data-cat="gif" aria-labelledby="cat-gif"><div class="cat-head"><h3 id="cat-gif">GIFs</h3><span class="cat-n"></span></div><div class="wall"></div></section>
+        <section class="cat" data-cat="video" aria-labelledby="cat-video"><div class="cat-head"><h3 id="cat-video">Videos</h3><span class="cat-n"></span></div><div class="wall"></div></section>
+      </div>
       <div class="empty" id="wall-empty" hidden>
         <img src="ghost.webp" alt="" width="756" height="1561" style="height:120px;width:auto">
         <b>The depot is empty</b>
@@ -356,8 +369,9 @@ io.observe($("#memes")); io.observe($("#maker"));
 /* =========================================================
    MEME DEPOT
    ========================================================= */
-const wall = $("#wall"), wallEmpty = $("#wall-empty"), wallStatus = $("#wall-status"), countEl = $("#meme-count");
-let memes = [], filter = "all", canDelete = false, lastSync = null;
+const depot = $("#depot"), wallEmpty = $("#wall-empty"), wallStatus = $("#wall-status"), countEl = $("#meme-count");
+let library = [], uploads = [], memes = [], filter = "all", canDelete = false;
+const CATS = { image:"images", gif:"GIFs", video:"videos" };
 let adminKey = ""; try { adminKey = sessionStorage.getItem("mnero-admin") || ""; } catch(e){}
 
 function safeXUrl(u){ try { const x = new URL(u); if (x.protocol === "https:" && /(^|\.)(x\.com|twitter\.com)$/i.test(x.hostname)) return x.href; } catch(e){} return null; }
@@ -371,12 +385,20 @@ async function api(body){
 }
 
 function renderWall(){
-  wall.textContent = "";
-  const list = memes.filter(m => filter === "all" || m.kind === filter);
+  memes = [...uploads, ...library];
   countEl.textContent = memes.length ? `${memes.length} meme${memes.length===1?"":"s"} archived` : "";
-  wallEmpty.hidden = list.length > 0 || !!wallStatus.dataset.loading;
-  if (!list.length && memes.length) { wallEmpty.hidden = false; $("#empty-line").textContent = `No ${filter === "video" ? "videos" : "images"} yet. Try another filter.`; }
-  for (const m of list) wall.append(memeCard(m));
+  const loading = !!wallStatus.dataset.loading;
+  wallEmpty.hidden = memes.length > 0 || loading;
+  depot.hidden = !memes.length;
+  depot.querySelectorAll(".cat").forEach(sec => {
+    const cat = sec.dataset.cat, list = memes.filter(m => m.kind === cat), wall = sec.querySelector(".wall");
+    sec.hidden = filter !== "all" && filter !== cat;
+    sec.querySelector(".cat-n").textContent = String(list.length);
+    wall.textContent = "";
+    sec.querySelector(".cat-empty")?.remove();
+    if (!list.length) sec.append(el("p",{className:"cat-empty",textContent:`No ${CATS[cat]} yet.`}));
+    for (const m of list) wall.append(memeCard(m));
+  });
 }
 function memeCard(m){
   const card = el("figure",{className:"meme"});
@@ -389,6 +411,9 @@ function memeCard(m){
     card.addEventListener("mouseenter",()=>media.play().catch(()=>{}));
     card.addEventListener("mouseleave",()=>media.pause());
     card.append(el("span",{className:"kind",textContent:"VIDEO"}));
+  } else if (m.kind === "gif") {
+    media = el("img",{src:srcFor(m),alt:m.caption||"Meownero GIF",loading:"lazy",decoding:"async"});
+    card.append(el("span",{className:"kind",textContent:"GIF"}));
   } else {
     media = el("img",{src:srcFor(m),alt:m.caption||"Meownero meme",loading:"lazy",decoding:"async"});
   }
@@ -407,14 +432,14 @@ function memeCard(m){
     }
     card.append(meta);
   }
-  if (canDelete) {
+  if (canDelete && m.source === "upload") {
     const del = el("button",{className:"del",type:"button",textContent:"Remove"});
     let armed = false, armT;
     del.addEventListener("click", async ev => {
       ev.stopPropagation();
       if (!armed) { armed = true; del.classList.add("confirm"); del.textContent = "Confirm remove"; armT = setTimeout(()=>{armed=false;del.classList.remove("confirm");del.textContent="Remove";},4000); return; }
       clearTimeout(armT); del.disabled = true; del.textContent = "Removing…";
-      try { await api({ action:"delete", id:m.id }); memes = memes.filter(x => x.id !== m.id); renderWall(); toast("Removed from the depot"); }
+      try { await api({ action:"delete", id:m.id }); uploads = uploads.filter(x => x.id !== m.id); renderWall(); toast("Removed from the depot"); }
       catch(e){ del.disabled = false; del.textContent = "Remove"; toast("Couldn't remove it. Try again."); }
     });
     card.append(del);
@@ -467,7 +492,7 @@ function drawQueue(){
     const q = el("div",{className:"q"});
     const url = URL.createObjectURL(f);
     q.append(f.type.startsWith("video") ? el("video",{src:url,muted:true}) : el("img",{src:url,alt:""}));
-    q.append(el("span",{textContent: f.type.startsWith("video") ? "video" : "image"}));
+    q.append(el("span",{textContent: kindOf(f)}));
     q.title = f.name;
     queue.append(q);
   });
@@ -481,6 +506,7 @@ fileIn.addEventListener("change",()=>{ addFiles(fileIn.files); fileIn.value=""; 
 ["dragenter","dragover"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.add("over");}));
 ["dragleave","drop"].forEach(t=>drop.addEventListener(t,e=>{e.preventDefault();drop.classList.remove("over");}));
 drop.addEventListener("drop",e=>addFiles(e.dataTransfer.files));
+const kindOf = f => f.type.startsWith("video") ? "video" : f.type === "image/gif" ? "gif" : "image";
 const safeName = n => (String(n).toLowerCase().replace(/[^a-z0-9.]+/g,"-").replace(/^-+|-+$/g,"") || "meme").slice(-80);
 addBtn.addEventListener("click", async () => {
   if (!pending.length || !adminKey) return;
@@ -494,7 +520,7 @@ addBtn.addEventListener("click", async () => {
     addMsg.className = "msg"; addMsg.textContent = `Uploading ${done+failed+1} of ${batch.length}…`;
     try {
       const up = await BlobClient.upload("depot/media/" + safeName(f.name), f, { access:"public", handleUploadUrl:"/api/upload", headers:{ "x-admin-key":adminKey }, multipart: f.size > 8*1024*1024, contentType: f.type });
-      await api({ action:"add", items:[{ url:up.url, pathname:up.pathname, kind: f.type.startsWith("video") ? "video" : "image", caption, handle, xUrl }] });
+      await api({ action:"add", items:[{ url:up.url, pathname:up.pathname, kind: kindOf(f), caption, handle, xUrl }] });
       done++;
       pending = pending.filter(p => p !== f);
     } catch (e) {
@@ -508,17 +534,14 @@ addBtn.addEventListener("click", async () => {
   loadMemes(true);
 });
 
-/* Admin sign-in and sync */
+/* Admin sign-in */
 const loginBox = $("#admin-login"), adder = $("#adder");
 function showAdmin(on){
   adder.hidden = !on; loginBox.hidden = true; canDelete = on;
-  if (on) $("#empty-line").textContent = "Drop your first meme in the panel above. Synced X posts appear here automatically.";
-  renderWall(); renderSyncNote();
+  if (on) $("#empty-line").textContent = "Drop your first meme in the panel above.";
+  renderWall();
 }
-function renderSyncNote(){
-  const when = lastSync ? new Date(lastSync).toLocaleString(undefined,{dateStyle:"medium",timeStyle:"short"}) : "not yet";
-  $("#sync-note").textContent = `Posts mentioning Meownero from @lowreswiz, @imnogue and @LFilistin arrive automatically every two hours through StonkDash's X connection. Last sync: ${when}. Manual uploads: images and videos up to ${MAX_MB} MB.`;
-}
+$("#sync-note").textContent = `Uploads go straight into the matching section: images, GIFs or videos, up to ${MAX_MB} MB each. Only memes you upload here can be removed here.`;
 function openLogin(){ if (adminKey) return showAdmin(true); loginBox.hidden = false; $("#login-pw").focus(); loginBox.scrollIntoView({block:"center"}); }
 $("#admin-link").addEventListener("click", e => { e.preventDefault(); location.hash = "memes"; openLogin(); });
 $("#login-form").addEventListener("submit", async e => {
@@ -530,19 +553,31 @@ $("#login-form").addEventListener("submit", async e => {
 });
 $("#logout-btn").addEventListener("click", () => { adminKey = ""; try { sessionStorage.removeItem("mnero-admin"); } catch(e){} showAdmin(false); toast("Signed out"); });
 /* Load the depot */
-async function loadMemes(fresh){
+// The curated collection ships with the site (public/memes/); admin uploads come from /api/memes.
+async function loadLibrary(){
+  try {
+    const r = await fetch("/memes/manifest.json");
+    if (!r.ok) throw new Error(r.status);
+    const j = await r.json();
+    library = (j.memes || []).filter(m => typeof m.file === "string" && /^[a-z]+\/[A-Za-z0-9._-]+$/.test(m.file) && CATS[m.kind])
+      .map(m => ({ id:"lib-"+m.file, url:"/memes/"+m.file, kind:m.kind, caption:m.caption||"", source:"library" }));
+  } catch (e) { library = []; return false; }
+  return true;
+}
+async function loadUploads(fresh){
   try {
     const r = await fetch("/api/memes" + (fresh ? `?t=${Date.now()}` : ""), { cache: fresh ? "no-store" : "default" });
     if (!r.ok) throw new Error(r.status);
     const j = await r.json();
-    memes = (j.memes || []).filter(m => typeof m.url === "string" && /^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(m.url));
-    lastSync = j.lastSync || null;
-    wallStatus.textContent = "";
-  } catch (e) {
-    wallStatus.textContent = "The meme depot couldn't load right now. Refresh to try again.";
-  }
+    uploads = (j.memes || []).filter(m => typeof m.url === "string" && /^https:\/\/[^/]+\.public\.blob\.vercel-storage\.com\//.test(m.url) && CATS[m.kind]);
+  } catch (e) { uploads = []; return false; }
+  return true;
+}
+async function loadMemes(fresh){
+  const [libOk] = await Promise.all([library.length ? true : loadLibrary(), loadUploads(fresh)]);
+  wallStatus.textContent = libOk ? "" : "The meme depot couldn't load right now. Refresh to try again.";
   delete wallStatus.dataset.loading;
-  renderWall(); if (canDelete) renderSyncNote();
+  renderWall();
 }
 wallStatus.dataset.loading = "1"; wallStatus.textContent = "Loading memes…";
 loadMemes(false);

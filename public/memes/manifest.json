@@ -1,0 +1,96 @@
+{
+  "memes": [
+    {
+      "file": "images/meownero-01.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-02.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-03.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-04.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-05.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/meownero-06.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "gifs/meownero-01.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-02.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-03.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-04.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-05.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-06.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-07.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-08.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-09.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-10.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-11.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "gifs/meownero-12.gif",
+      "kind": "gif"
+    },
+    {
+      "file": "videos/boxing-final.mp4",
+      "kind": "video"
+    },
+    {
+      "file": "videos/final-petshot.mp4",
+      "kind": "video"
+    },
+    {
+      "file": "videos/lvbaby.mp4",
+      "kind": "video"
+    },
+    {
+      "file": "videos/poolside2.mp4",
+      "kind": "video"
+    },
+    {
+      "file": "videos/shelter-final.mp4",
+      "kind": "video"
+    }
+  ]
+}

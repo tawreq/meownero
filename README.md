@@ -1,21 +1,21 @@
 # Meownero ($MNERO)
 
-Meme depot + ghost-cat PFP generator. Static page in `public/`, Vercel Functions in `api/`, media in Vercel Blob.
+Meme depot + ghost-cat PFP generator. Static page in `public/`, curated memes in `public/memes/`, Vercel Functions in `api/`, admin uploads in Vercel Blob.
 
 ## How the depot fills up
-- **X sync** runs in the StonkDash repo (`tawreq/stonkdash`, workflow "Meownero depot sync", every two hours or by hand),
-  using StonkDash's existing X keys. It searches @lowreswiz, @imnogue and @LFilistin for posts mentioning
-  Meownero / $MEOWNERO / ミャウネロ with images or video and sends them to `POST /api/ingest`, which accepts only GitHub OIDC
-  tokens issued to tawreq/stonkdash for the "meownero" audience (no shared password). First run looks back 3 days.
-- **Manual uploads**: open the site, click **Admin** in the footer, sign in, drop files.
-- Removing a synced meme keeps it from coming back.
+The depot has three sections: **Images**, **GIFs** and **Videos**. A file's type decides its section.
+- **Curated collection** ships with the site in `public/memes/{images,gifs,videos}/`. To change it, add or remove
+  files there, run `node scripts/build-manifest.mjs`, and push. Videos should be H.264 MP4 (HEVC won't play in
+  most browsers): `ffmpeg -i in.mp4 -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -c:a copy -movflags +faststart out.mp4`.
+- **Manual uploads**: open the site, click **Admin** in the footer, sign in, drop files. They go to Vercel Blob
+  (index `depot/index-v2.json`) and can be removed from the Admin panel.
+- There is no automatic X sync; it was switched off on 2026-11-10.
 
 ## Environment variables
 | Name | What |
 | --- | --- |
 | `BLOB_READ_WRITE_TOKEN` | Added automatically by the connected Blob store |
 | `ADMIN_PASSWORD` | Password for the Admin panel |
-| `SYNC_REPO` | Optional; repo allowed to send X posts (default `tawreq/stonkdash`) |
 
 ## Dev
-`npm i`, `node scripts/test-ingest.mjs ../stonkdash` (offline end-to-end sync test), `npm run build:client` (rebuilds `public/blob-client.js`).
+`npm i`, `node scripts/build-manifest.mjs` (rebuilds the depot list), `npm run build:client` (rebuilds `public/blob-client.js`).

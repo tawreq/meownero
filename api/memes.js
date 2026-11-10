@@ -13,7 +13,7 @@ export default async function handler(req, res) {
       const { index } = await readIndex();
       const memes = index.memes.map(({ id, url, kind, caption, handle, xUrl, addedAt, source }) => ({ id, url, kind, caption, handle, xUrl, addedAt, source }));
       res.setHeader("Cache-Control", "s-maxage=30, stale-while-revalidate=300");
-      return res.status(200).json({ memes, lastSync: index.state.lastSync });
+      return res.status(200).json({ memes });
     }
     if (req.method !== "POST") return res.status(405).json({ error: "Method not allowed" });
     if (!isAdmin(req)) return res.status(401).json({ error: "Wrong admin password" });
@@ -27,7 +27,7 @@ export default async function handler(req, res) {
         if (!BLOB_HOST.test(host)) return [];
         return [{
           id: `u-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`,
-          url: it.url, pathname: clean(it.pathname, 300), kind: it.kind === "video" ? "video" : "image",
+          url: it.url, pathname: clean(it.pathname, 300), kind: ["video", "gif"].includes(it.kind) ? it.kind : "image",
           caption: clean(it.caption, 140), handle: handleOf(it.handle), xUrl: xUrlOf(it.xUrl),
           addedAt: Date.now(), source: "upload",
         }];
@@ -43,8 +43,6 @@ export default async function handler(req, res) {
         const i = idx.memes.findIndex(m => m.id === body.id);
         if (i >= 0) {
           removed = idx.memes.splice(i, 1)[0];
-          // Keep synced posts from coming back on the next sync.
-          if (removed.mediaKey) idx.blocked = [...new Set([...(idx.blocked || []), removed.mediaKey])];
         }
       });
       if (!removed) return res.status(404).json({ error: "Meme not found" });
