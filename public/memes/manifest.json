@@ -1,123 +1,123 @@
 {
   "memes": [
     {
-      "file": "references/reference-01.jpg",
+      "file": "references/01-edf2ee28.jpg",
       "kind": "reference"
     },
     {
-      "file": "references/reference-02.png",
+      "file": "references/02-fbccafaa.png",
       "kind": "reference"
     },
     {
-      "file": "references/reference-03.png",
+      "file": "references/03-de2efc77.png",
       "kind": "reference"
     },
     {
-      "file": "references/reference-04.png",
+      "file": "references/04-a1db7a72.png",
       "kind": "reference"
     },
     {
-      "file": "references/reference-05.png",
+      "file": "references/05-c194e5a7.png",
       "kind": "reference"
     },
     {
-      "file": "images/meownero-01.jpg",
+      "file": "images/01-1e2d5105.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-02.jpg",
+      "file": "images/02-cd9d4252.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-03.jpg",
+      "file": "images/03-6f15eb3e.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-04.jpg",
+      "file": "images/04-9623e85b.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-05.jpg",
+      "file": "images/05-548066ef.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-06.jpg",
+      "file": "images/06-00fee40a.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-07.jpg",
+      "file": "images/07-ddc922eb.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-08.jpg",
+      "file": "images/08-9011493d.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-09.jpg",
+      "file": "images/09-05863fd4.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-10.jpg",
+      "file": "images/10-87c8b800.jpg",
       "kind": "image"
     },
     {
-      "file": "images/meownero-11.jpg",
+      "file": "images/11-f17be02c.jpg",
       "kind": "image"
     },
     {
-      "file": "gifs/meownero-01.gif",
+      "file": "gifs/01-39fd7aab.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-02.gif",
+      "file": "gifs/02-0707bb9c.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-05.gif",
+      "file": "gifs/03-7146a76e.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-06.gif",
+      "file": "gifs/04-bb0b39f1.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-07.gif",
+      "file": "gifs/05-d9fb6dd1.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-09.gif",
+      "file": "gifs/06-e67b289c.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-10.gif",
+      "file": "gifs/07-a3dea9e5.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-11.gif",
+      "file": "gifs/08-c06dec20.gif",
       "kind": "gif"
     },
     {
-      "file": "gifs/meownero-12.gif",
+      "file": "gifs/09-7e2aa953.gif",
       "kind": "gif"
     },
     {
-      "file": "videos/boxing-final.mp4",
+      "file": "videos/01-6d0fedc8.mp4",
       "kind": "video"
     },
     {
-      "file": "videos/final-petshot.mp4",
+      "file": "videos/02-def0fac8.mp4",
       "kind": "video"
     },
     {
-      "file": "videos/lvbaby.mp4",
+      "file": "videos/03-28d6f081.mp4",
       "kind": "video"
     },
     {
-      "file": "videos/meowdmc30sec.mp4",
+      "file": "videos/04-f0945e2a.mp4",
       "kind": "video"
     },
     {
-      "file": "videos/poolside2.mp4",
+      "file": "videos/05-09e41854.mp4",
       "kind": "video"
     }
   ]
