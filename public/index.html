@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="description" content="Meownero ($MNERO): the meme depot. Secrets stay secret.">
+<meta name="description" content="Meownero ($MNERO): the Commeownity Meme Depot. Secrets stay secret.">
 <meta property="og:title" content="Meownero ($MNERO)">
-<meta property="og:description" content="The Meownero meme depot.">
+<meta property="og:description" content="The Meownero Commeownity Meme Depot.">
 <meta property="og:image" content="/ghost-sticker.webp">
 <link rel="icon" href="/favicon.ico" sizes="48x48">
 <link rel="icon" type="image/png" href="/favicon-head.png" sizes="192x192">
@@ -233,7 +233,7 @@ footer p{margin:0;font-size:13px;max-width:60ch}
       <div class="sec-head">
         <div>
           <p class="kicker" lang="ja">ミーム倉庫</p>
-          <h2 id="memes-h">Meme Depot</h2>
+          <h2 id="memes-h">Commeownity Meme Depot</h2>
           <p class="sec-sub">The best Meownero memes, kept in one place. Tap any meme to open it full size.</p>
         </div>
         <div style="display:grid;gap:10px;justify-items:end">
@@ -428,7 +428,7 @@ async function loadLibrary(){
 }
 async function loadMemes(){
   const libOk = await loadLibrary();
-  wallStatus.textContent = libOk ? "" : "The meme depot couldn't load right now. Refresh to try again.";
+  wallStatus.textContent = libOk ? "" : "The Commeownity Meme Depot couldn't load right now. Refresh to try again.";
   delete wallStatus.dataset.loading;
   renderWall();
 }
