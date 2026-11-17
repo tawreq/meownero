@@ -1,4 +1,4 @@
-// Rebuilds public/memes/manifest.json from the files in public/memes/{references,images,gifs,videos}.
+// Rebuilds public/memes/manifest.json from the files in public/memes/{references,images,pfps,gifs,videos}.
 // The folder decides the section, in that order; files of an unsupported type are skipped.
 //
 //   node scripts/build-manifest.mjs
@@ -6,9 +6,9 @@ import { readdirSync, writeFileSync, readFileSync, statSync } from "node:fs";
 import { join } from "node:path";
 
 const ROOT = new URL("../public/memes/", import.meta.url).pathname;
-const DIRS = { references: "reference", images: "image", gifs: "gif", videos: "video" };
-const ORDER = { reference: 0, image: 1, gif: 2, video: 3 };
-const OK = { reference: /\.(jpe?g|png|webp|gif)$/i, image: /\.(jpe?g|png|webp)$/i, gif: /\.gif$/i, video: /\.(mp4|webm)$/i };
+const DIRS = { references: "reference", images: "image", pfps: "pfp", gifs: "gif", videos: "video" };
+const ORDER = { reference: 0, image: 1, pfp: 2, gif: 3, video: 4 };
+const OK = { reference: /\.(jpe?g|png|webp|gif)$/i, image: /\.(jpe?g|png|webp)$/i, pfp: /\.(jpe?g|png|webp)$/i, gif: /\.gif$/i, video: /\.(mp4|webm)$/i };
 
 // Optional credits.json: { "videos/06-ab12cd34.mp4": { "handle": "LFilistin", "xUrl": "https://x.com/…/status/…" } }
 let credits = {};
@@ -27,4 +27,4 @@ for (const [dir, kind] of Object.entries(DIRS)) {
 memes.sort((a, b) => ORDER[a.kind] - ORDER[b.kind] || a.file.localeCompare(b.file, "en", { numeric: true }));
 writeFileSync(join(ROOT, "manifest.json"), JSON.stringify({ memes }, null, 2) + "\n");
 const n = k => memes.filter(m => m.kind === k).length;
-console.log(`manifest.json: ${n("reference")} references, ${n("image")} images, ${n("gif")} GIFs, ${n("video")} videos`);
+console.log(`manifest.json: ${n("reference")} references, ${n("image")} images, ${n("pfp")} PFPs, ${n("gif")} GIFs, ${n("video")} videos`);

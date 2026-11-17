@@ -3,8 +3,8 @@
 Meme depot + ghost-cat PFP generator. Static page in `public/`, curated memes in `public/memes/`, Vercel Functions in `api/`, admin uploads in Vercel Blob.
 
 ## How the depot fills up
-The depot has four sections, in this order: **References**, **Images**, **GIFs** and **Videos**. The folder a file is in decides its section.
-- **Curated collection** ships with the site in `public/memes/{references,images,gifs,videos}/`. To change it, add or remove
+The depot has five sections, in this order: **References**, **Images**, **PFPs**, **GIFs** and **Videos**. The folder a file is in decides its section.
+- **Curated collection** ships with the site in `public/memes/{references,images,pfps,gifs,videos}/`. To change it, add or remove
   files there, run `node scripts/build-manifest.mjs`, and push. Files are named `NN-<content hash>.ext` (NN sets the
   order) and cached for a year, so never reuse a name for a different picture. Videos should be H.264 MP4 (HEVC won't play in
   most browsers): `ffmpeg -i in.mp4 -c:v libx264 -preset veryfast -crf 22 -pix_fmt yuv420p -c:a copy -movflags +faststart out.mp4`.
