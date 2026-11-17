@@ -183,6 +183,18 @@
       "xUrl": "https://x.com/spinozasl27/status/2120961000845283562"
     },
     {
+      "file": "images/35-c3e27f3e.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/36-fa6046ec.jpg",
+      "kind": "image"
+    },
+    {
+      "file": "images/37-6ab13b71.jpg",
+      "kind": "image"
+    },
+    {
       "file": "gifs/01-39fd7aab.gif",
       "kind": "gif"
     },
@@ -406,6 +418,10 @@
       "kind": "video",
       "handle": "ElienMosk",
       "xUrl": "https://x.com/ElienMosk/status/2111996473269506176"
+    },
+    {
+      "file": "videos/30-f1a40a3c.mp4",
+      "kind": "video"
     }
   ]
 }
