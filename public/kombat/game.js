@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='17';
+const V='18';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -372,17 +372,17 @@ function litSprite(f,w,h,refl,img){img=img||IMG.body[f.def.n];const s=Math.min(2
   const near=f.x<WW/2?-1:1;const m=lightMaps(img);
   if(m){// world side of the key light -> sprite side (sprites are flipped when facing left)
    const keyLeft=(near<0)===(f.facing>0);
-   tg.drawImage(m.shade,0,0,cw,ch);
+   tg.globalAlpha=.7;tg.drawImage(m.shade,0,0,cw,ch);tg.globalAlpha=1;
    tg.globalCompositeOperation='lighter';
-   tg.globalAlpha=1;tg.drawImage(tinted(keyLeft?m.rimL:m.rimR,cw,ch,`rgb(${A.light})`),0,0,cw,ch,0,0,cw,ch);
-   tg.globalAlpha=.5;tg.drawImage(tinted(keyLeft?m.rimR:m.rimL,cw,ch,'rgb(130,165,255)'),0,0,cw,ch,0,0,cw,ch);
-   tg.globalAlpha=.7;tg.drawImage(m.spec,0,0,cw,ch);tg.globalAlpha=1;tg.globalCompositeOperation='source-atop'}
-  const g=tg.createLinearGradient(near>0?cw:0,0,near>0?0:cw,0);g.addColorStop(0,`rgba(${A.light},.18)`);g.addColorStop(.45,`rgba(${A.light},0)`);tg.fillStyle=g;tg.fillRect(0,0,cw,ch);
-  const v=tg.createLinearGradient(0,0,0,ch);v.addColorStop(0,'rgba(170,190,255,.08)');v.addColorStop(.6,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.38)');tg.fillStyle=v;tg.fillRect(0,0,cw,ch);
-  if(f.stunT>0){tg.globalAlpha=.5;tg.fillStyle=f.stunC;tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
+   tg.globalAlpha=.32;tg.drawImage(tinted(keyLeft?m.rimL:m.rimR,cw,ch,`rgb(${A.light})`),0,0,cw,ch,0,0,cw,ch);
+   tg.globalAlpha=.12;tg.drawImage(tinted(keyLeft?m.rimR:m.rimL,cw,ch,'rgb(150,170,220)'),0,0,cw,ch,0,0,cw,ch);
+   tg.globalAlpha=.18;tg.drawImage(m.spec,0,0,cw,ch);tg.globalAlpha=1;tg.globalCompositeOperation='source-atop'}
+  const g=tg.createLinearGradient(near>0?cw:0,0,near>0?0:cw,0);g.addColorStop(0,`rgba(${A.light},.07)`);g.addColorStop(.45,`rgba(${A.light},0)`);tg.fillStyle=g;tg.fillRect(0,0,cw,ch);
+  const v=tg.createLinearGradient(0,0,0,ch);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(.55,'rgba(0,0,0,.04)');v.addColorStop(1,'rgba(0,0,0,.30)');tg.fillStyle=v;tg.fillRect(0,0,cw,ch);
+  if(f.stunT>0){tg.globalAlpha=.28;tg.fillStyle=f.stunC;tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
   if(f.fx&&f.fx.tintA>0){tg.globalAlpha=f.fx.tintA;tg.fillStyle=f.fx.tint;tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
-  if(f.flash>0){tg.fillStyle=`rgba(255,255,255,${Math.min(1,f.flash*5)})`;tg.fillRect(0,0,cw,ch)}
-  if(f.st==='special'||f.st==='dash'||f.st==='win'){tg.fillStyle=f.def.c;tg.globalAlpha=.18+.1*Math.sin(f.t*30);tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
+  if(f.flash>0){tg.fillStyle=`rgba(255,255,255,${Math.min(.45,f.flash*3)})`;tg.fillRect(0,0,cw,ch)}
+  if(f.st==='special'||f.st==='dash'){tg.fillStyle=f.def.c;tg.globalAlpha=.05;tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
  }else{tg.fillStyle='rgba(20,18,26,.35)';tg.fillRect(0,0,cw,ch)}
  tg.globalCompositeOperation='source-over';return{cw,ch}}
 
@@ -444,7 +444,7 @@ function drawFighter(f,t,refl=false){
  if(shiftX)ctx.translate(shiftX,0);
  if(X)ctx.scale(X.sx,X.sy);
  if(X&&X.split){for(const half of [0,1]){ctx.save();ctx.beginPath();if(!half){ctx.moveTo(-w*3,-h*3);ctx.lineTo(w*3,-h*3);ctx.lineTo(w*3,-h*.38);ctx.lineTo(-w*3,-h*.62)}else{ctx.moveTo(-w*3,-h*.62);ctx.lineTo(w*3,-h*.38);ctx.lineTo(w*3,h);ctx.lineTo(-w*3,h)}ctx.closePath();ctx.clip();ctx.translate(half?X.split*.5:-X.split*.6,half?X.split*.15:-X.split*.35);ctx.rotate(half?.08*X.split/150:-.25*X.split/150);drawWarp(cw,ch,w,h,p,null);ctx.restore()}}
- else drawWarp(cw,ch,w,h,p,refl||X||f.st==='ko'?null:{c:hexA(f.def.c,.8),b:(f.st==='special'||f.st==='dash'||f.st==='win'?46:22+Math.sin(t*6+f.x)*5)*cam.z});
+ else drawWarp(cw,ch,w,h,p,refl||X||f.st==='ko'||!(f.st==='special'||f.st==='dash')?null:{c:hexA(f.def.c,.35),b:14*cam.z});
  ctx.restore();
  if(refl)return;
  // attack trails
@@ -463,7 +463,7 @@ function drawFighter(f,t,refl=false){
 function hexA(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
 const EL={};for(const [e,ns] of Object.entries({fire:[2,14,18,26,40,43],bolt:[8,13,27,29],frost:[3,23,31],toxic:[10,21,44],arcane:[5,9,17,20,25,32,46,48],nature:[6,16,24,30],water:[15],ki:[1,4,7,11,12,19,22,28,41,42,45,47,49]}))for(const n of ns)EL[n]=e;
 let aura=[];
-function emitAura(f,dt){if(f.gone||f.st==='ko'||f.fx)return;const w=bodyW(f),h=FH,e=EL[f.def.n]||'ki';const hot=f.st==='special'||f.st==='dash'||f.st==='win'||f.st==='upper';let rate=(hot?70:16)*dt;
+function emitAura(f,dt){if(f.gone||f.st==='ko'||f.fx)return;const w=bodyW(f),h=FH,e=EL[f.def.n]||'ki';const hot=f.st==='special'||f.st==='dash';let rate=(hot?26:0)*dt;
  while(rate>0){if(Math.random()<rate){const side=Math.random()<.5?-1:1;const x=f.x+side*w*(.18+Math.random()*.24),y=f.y-h*(.05+Math.random()*.85);
   const P={e,x,y,vx:(Math.random()-.5)*30,vy:-40-Math.random()*90,t:0,life:.5+Math.random()*.6,s:(4+Math.random()*8)*SC,c:f.def.c,r:Math.random()*TAU};
   if(e==='fire'){P.vy=-120-Math.random()*160;P.life=.45+Math.random()*.35;P.s=(9+Math.random()*12)*SC}
@@ -891,7 +891,7 @@ function drawFight(t,dt){
  drawBurst3D();drawGore();
  for(const f of floaters){const x=f.anchor?f.anchor.x:f.x,y=f.anchor?f.anchor.y-FH-40:f.y;ctx.globalAlpha=Math.max(0,1-f.t);txt(f.s,x,y-f.t*50,f.small?28:36,f.c,{stroke:'#000',sw:6});ctx.globalAlpha=1}
  drawAtmos(t,dt*timeScale);
- if(flashScreen>0){camReset();ctx.fillStyle=`rgba(255,255,255,${Math.min(.85,flashScreen*2.5)*(1-.65*cine.k)})`;ctx.fillRect(0,0,W,H)}
+ if(flashScreen>0){camReset();ctx.fillStyle=`rgba(255,255,255,${Math.min(.4,flashScreen*1.2)*(1-.65*cine.k)})`;ctx.fillRect(0,0,W,H)}
  if(slowT>0){ctx.fillStyle=`rgba(80,0,0,${.18*Math.min(1,slowT)})`;ctx.fillRect(0,0,W,H)}
  drawCineOverlay(t);
  // HUD
