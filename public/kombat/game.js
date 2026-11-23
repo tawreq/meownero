@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='9';
+const V='10';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -54,6 +54,8 @@ const IMG={body:{},por:{},px:{},punch:{}};
 const PANCH={1:.442,2:.418,3:.431,4:.419,5:.448,6:.42,8:.41,9:.45,10:.43,11:.436,12:.449,13:.412,14:.453,15:.437,16:.44,17:.43,18:.431,19:.455,20:.426,21:.456,22:.449,23:.441,24:.44,25:.44,26:.427,27:.428,28:.459};
 function load(src,tries=0){return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>{if(tries<6)setTimeout(()=>load(src,tries+1).then(res),800*(tries+1));else res(null)};i.src=src+'?v='+V+(tries?'&r='+tries:'')})}
 let loaded=0;const total=PLAYABLE.length*2;
+load('/kombat/logo.webp').then(i=>{IMG.logo=i});
+function drawLogo(cx,cy,w,glow){const L=IMG.logo;if(!L)return false;const h=w*L.height/L.width;ctx.save();if(glow){ctx.shadowColor='rgba(255,110,30,.55)';ctx.shadowBlur=glow}ctx.drawImage(L,cx-w/2,cy-h/2,w,h);ctx.restore();return true}
 PLAYABLE.forEach(f=>{
  load(`/kombat/f/${pad(f.n)}.webp`).then(i=>{IMG.body[f.n]=i;loaded++});
  load(`/kombat/p/${pad(f.n)}.webp`).then(i=>{IMG.por[f.n]=i;loaded++});
@@ -595,8 +597,8 @@ function drawPortrait(n,x,y,w,h){const img=IMG.por[n];if(!img){ctx.fillStyle='#2
 function bigFighter(def,x,y,h,flip,glow){const img=IMG.body[def.n];if(!img)return;const w=img.width*h/img.height;ctx.save();if(glow){ctx.shadowColor=glow;ctx.shadowBlur=40}ctx.translate(x,y);ctx.scale(flip?-1:1,1);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore()}
 function title3D(a,b,y,s){ctx.save();ctx.translate(W/2,y);ctx.rotate(-.03);ctx.scale(s,s);for(let i=10;i>0;i--)txt(a,i*.8,-40+i*.8,150,'#3a1205');txt(a,0,-40,150,'',{metal:'#FA691D',stroke:'#000',sw:14});for(let i=10;i>0;i--)txt(b,i*.8,100+i*.8,150,'#24212b');txt(b,0,100,150,'',{metal:'#c9c4d4',stroke:'#000',sw:14});ctx.restore()}
 function drawTitle(t,dt){cam.x=WW/2+Math.sin(t*.2)*200;cam.z=1.05;drawArena(t);drawAtmos(t,dt);camReset();
- ctx.fillStyle='rgba(8,7,12,.35)';ctx.fillRect(0,0,W,H);title3D('MEOWRTAL','KOMBAT',300,1+Math.sin(t*2.4)*.015);
- txt('ミャウネロ格闘',W/2,452,34,'#FA691D',{family:DELA,glow:'#FA691D'});
+ ctx.fillStyle='rgba(8,7,12,.45)';ctx.fillRect(0,0,W,H);{const sc=1+Math.sin(t*2.2)*.012;if(!drawLogo(W/2,250,860*sc,30+Math.sin(t*3)*12))title3D('MEOWRTAL','KOMBAT',300,sc)}
+ txt('ミャウネロ格闘',W/2,505,28,'#FA691D',{family:DELA,glow:'#FA691D'});
  const n=PLAYABLE.length;for(let i=0;i<9;i++){const f=PLAYABLE[(Math.floor(t*.6)+i)%n];bigFighter(f,130+i*128,640,165,i>=5)}
  if(Math.floor(t*2)%2===0)txt(matchMedia('(pointer:coarse)').matches?'TAP TO START':'PRESS ENTER',W/2,700,32,'#fff',{stroke:'#000',sw:6});
  if(loaded<total){ctx.fillStyle='#000';ctx.fillRect(W/2-150,470,300,8);ctx.fillStyle='#FA691D';ctx.fillRect(W/2-150,470,300*loaded/total,8)}}
@@ -620,7 +622,7 @@ function drawVS(t,dt){cam.x=WW/2;cam.z=1;drawArena(t);drawAtmos(t,dt);camReset()
  const e=ease(sceneT/.4);
  bigFighter(p1Def,320-(1-e)*600,660,470,false,p1Def.c);bigFighter(p2Def,960+(1-e)*600,660,470,true,p2Def.c);
  txt(p1Def.name,320,700,40,p1Def.c,{stroke:'#000',sw:7});txt(p2Def.name,960,700,40,p2Def.c,{stroke:'#000',sw:7});
- txt('YOU',320,120,30,'#fff',{stroke:'#000',sw:5});txt(`STAGE · ${A.name}`,W/2,560,26,'#fff',{stroke:'#000',sw:5});txt(streak>0?`OPPONENT ${streak+1}`:'CPU',960,120,30,'#fff',{stroke:'#000',sw:5});
+ drawLogo(W/2,92,330,18);txt('YOU',320,120,30,'#fff',{stroke:'#000',sw:5});txt(`STAGE · ${A.name}`,W/2,560,26,'#fff',{stroke:'#000',sw:5});txt(streak>0?`OPPONENT ${streak+1}`:'CPU',960,120,30,'#fff',{stroke:'#000',sw:5});
  ctx.save();ctx.translate(W/2,380);const s=1+Math.max(0,.6-sceneT)*2;ctx.scale(s,s);for(let i=8;i>0;i--)txt('VS',i,40+i,170,'#3a1205');txt('VS',0,40,170,'',{metal:'#FA691D',stroke:'#000',sw:16});ctx.restore()}
 
 function plate(x,y,w,h,dir){// slanted metal plate
@@ -678,7 +680,7 @@ function share(){const r=lastResult;const text=r.won?`I beat ${r.them.name} with
  window.open('https://x.com/intent/post?text='+encodeURIComponent(text)+'&url='+encodeURIComponent('https://meownero.sh/kombat/'),'_blank','noopener')}
 function drawResult(t,dt){cam.x=WW/2;cam.z=1.05;drawArena(t);drawAtmos(t,dt);camReset();ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);const r=lastResult;
  bigFighter(r.won?r.me:r.them,W/2,490+(r.won?-Math.abs(Math.sin(t*5))*10:0),380,false,(r.won?r.me:r.them).c);
- txt(r.won?'MEOWTORY':'DEFEAT',W/2,150,120,'',{metal:r.won?'#FA691D':'#FF3B2E',stroke:'#000',sw:14});
+ drawLogo(W/2,60,230,14);txt(r.won?'MEOWTORY':'DEFEAT',W/2,165,110,'',{metal:r.won?'#FA691D':'#FF3B2E',stroke:'#000',sw:14});
  txt(r.won?`WIN STREAK ${r.streak}   ·   BEST ${best}`:`${r.them.name} WINS   ·   BEST STREAK ${best}`,W/2,200,28,'#fff',{stroke:'#000',sw:5});
  for(const b of resultButtons()){const hov=hover&&hover.x>b.x&&hover.x<b.x+b.w&&hover.y>b.y&&hover.y<b.y+b.h;const x=b.label==='SHARE ON X';ctx.fillStyle=x?'#000':hov?'#ffb37f':'#FA691D';rr(b.x,b.y,b.w,b.h,12);ctx.fill();ctx.strokeStyle=x?'#fff':'#000';ctx.lineWidth=x?2:4;ctx.stroke();txt(b.label,b.x+b.w/2,b.y+b.h/2+14,b.h>60?40:30,x?'#fff':'#17161A')}}
 
