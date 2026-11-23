@@ -118,7 +118,7 @@ const pad=n=>String(n).padStart(2,'0');
 
 // ---------- assets ----------
 const IMG={body:{},por:{},white:{}};
-function load(src){return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>res(null);i.src=src})}
+const V='3';function load(src,tries=0){return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>{if(tries<6)setTimeout(()=>load(src,tries+1).then(res),800*(tries+1));else res(null)};i.src=src+'?v='+V+(tries?'&r='+tries:'')})}
 function whiteOf(img){const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const g=c.getContext('2d');g.drawImage(img,0,0);g.globalCompositeOperation='source-in';g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);return c}
 let loaded=0;const total=PLAYABLE.length*2;
 const ready=Promise.all(PLAYABLE.flatMap(f=>[
