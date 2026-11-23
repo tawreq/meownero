@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='7';
+const V='8';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -308,11 +308,49 @@ const bodyW=f=>{const img=IMG.body[f.def.n];return img?FH*img.width/img.height:2
 
 // sprite compositor: lights the sprite into a temp canvas
 const tc=document.createElement('canvas'),tg=tc.getContext('2d');
+// ---------- pseudo-3D light maps: surface normals estimated from the silhouette and detail ----------
+const LMAP=new Map();
+function lightMaps(img){if(!img)return null;let m=LMAP.get(img);if(m)return m;
+ const H0=360,W0=Math.max(8,Math.round(img.width*H0/img.height));const c=document.createElement('canvas');c.width=W0;c.height=H0;const g=c.getContext('2d');g.drawImage(img,0,0,W0,H0);
+ let d;try{d=g.getImageData(0,0,W0,H0).data}catch(e){return null}
+ const N=W0*H0,al=new Float32Array(N),lum=new Float32Array(N),dist=new Float32Array(N);
+ for(let i=0;i<N;i++){al[i]=d[i*4+3]/255;lum[i]=(d[i*4]*.3+d[i*4+1]*.59+d[i*4+2]*.11)/255;dist[i]=al[i]>.5?1e6:0}
+ // chamfer distance to the outline
+ for(let y=0;y<H0;y++)for(let x=0;x<W0;x++){const i=y*W0+x;if(!dist[i])continue;let v=dist[i];if(x>0)v=Math.min(v,dist[i-1]+1);if(y>0){v=Math.min(v,dist[i-W0]+1);if(x>0)v=Math.min(v,dist[i-W0-1]+1.41);if(x<W0-1)v=Math.min(v,dist[i-W0+1]+1.41)}dist[i]=v}
+ for(let y=H0-1;y>=0;y--)for(let x=W0-1;x>=0;x--){const i=y*W0+x;if(!dist[i])continue;let v=dist[i];if(x<W0-1)v=Math.min(v,dist[i+1]+1);if(y<H0-1){v=Math.min(v,dist[i+W0]+1);if(x<W0-1)v=Math.min(v,dist[i+W0+1]+1.41);if(x>0)v=Math.min(v,dist[i+W0-1]+1.41)}dist[i]=v}
+ // blurred luminance for surface bumps
+ const bl=new Float32Array(N);for(let y=1;y<H0-1;y++)for(let x=1;x<W0-1;x++){const i=y*W0+x;bl[i]=(lum[i]*4+lum[i-1]+lum[i+1]+lum[i-W0]+lum[i+W0])/8}
+ const Rr=30,hgt=new Float32Array(N);for(let i=0;i<N;i++){const t=Math.min(dist[i]/Rr,1);hgt[i]=Math.sqrt(1-(1-t)*(1-t))*Rr+bl[i]*3.2}
+ const mk=()=>{const k=document.createElement('canvas');k.width=W0;k.height=H0;const kg=k.getContext('2d');return[k,kg,kg.createImageData(W0,H0)]};
+ const [cS,gS,dS]=mk(),[cL,gL,dL]=mk(),[cR,gR,dR]=mk(),[cP,gP,dP]=mk(),[cB,gB,dB]=mk();
+ const Lk=[.0,-.55,.83],Hs=[0,-.45,.89];
+ for(let y=1;y<H0-1;y++)for(let x=1;x<W0-1;x++){const i=y*W0+x,a=al[i];if(a<.02)continue;
+  let nx=-(hgt[i+1]-hgt[i-1])*.5,ny=-(hgt[i+W0]-hgt[i-W0])*.5,nz=1;const l=Math.hypot(nx,ny,nz);nx/=l;ny/=l;nz/=l;
+  const diff=Math.max(0,nx*Lk[0]+ny*Lk[1]+nz*Lk[2]);const edge=Math.pow(1-nz,1.05);
+  const o=i*4;
+  dS.data[o+3]=Math.min(255,Math.pow(1-diff,.8)*210*a);
+  dL.data[o]=dL.data[o+1]=dL.data[o+2]=255;dL.data[o+3]=Math.min(255,edge*Math.max(0,-nx)*1100*a);
+  dR.data[o]=dR.data[o+1]=dR.data[o+2]=255;dR.data[o+3]=Math.min(255,edge*Math.max(0,nx)*1100*a);
+  const sp=Math.pow(Math.max(0,nx*Hs[0]+ny*Hs[1]+nz*Hs[2]),28)*Math.max(0,lum[i]-.3)*2.4;dP.data[o]=dP.data[o+1]=dP.data[o+2]=255;dP.data[o+3]=Math.min(255,sp*255*a);
+  dB.data[o+3]=a*255}
+ gS.putImageData(dS,0,0);gL.putImageData(dL,0,0);gR.putImageData(dR,0,0);gP.putImageData(dP,0,0);gB.putImageData(dB,0,0);
+ m={shade:cS,rimL:cL,rimR:cR,spec:cP,sil:cB};LMAP.set(img,m);return m}
+const tt=document.createElement('canvas'),ttg=tt.getContext('2d');
+function tinted(mask,cw,ch,col){if(tt.width<cw||tt.height<ch){tt.width=Math.max(tt.width,cw);tt.height=Math.max(tt.height,ch)}ttg.globalCompositeOperation='source-over';ttg.clearRect(0,0,cw+2,ch+2);ttg.drawImage(mask,0,0,cw,ch);ttg.globalCompositeOperation='source-in';ttg.fillStyle=col;ttg.fillRect(0,0,cw,ch);ttg.globalCompositeOperation='source-over';return tt}
+function warmMaps(def){lightMaps(IMG.body[def.n]);lightMaps(IMG.punch[def.n])}
 function litSprite(f,w,h,refl,img){img=img||IMG.body[f.def.n];const s=Math.min(2,cam.z*1.15);const cw=Math.ceil(w*s),ch=Math.ceil(h*s);if(tc.width<cw||tc.height<ch){tc.width=Math.max(tc.width,cw);tc.height=Math.max(tc.height,ch)}
  tg.setTransform(1,0,0,1,0,0);tg.clearRect(0,0,cw+2,ch+2);tg.globalCompositeOperation='source-over';tg.imageSmoothingQuality='high';tg.drawImage(img,0,0,cw,ch);
  tg.globalCompositeOperation='source-atop';
  if(!refl){// key light from the near brazier + floor bounce + dark feet
-  const near=f.x<WW/2?-1:1;const g=tg.createLinearGradient(near>0?cw:0,0,near>0?0:cw,0);g.addColorStop(0,`rgba(${A.light},.3)`);g.addColorStop(.45,`rgba(${A.light},0)`);tg.fillStyle=g;tg.fillRect(0,0,cw,ch);
+  const near=f.x<WW/2?-1:1;const m=lightMaps(img);
+  if(m){// world side of the key light -> sprite side (sprites are flipped when facing left)
+   const keyLeft=(near<0)===(f.facing>0);
+   tg.drawImage(m.shade,0,0,cw,ch);
+   tg.globalCompositeOperation='lighter';
+   tg.globalAlpha=1;tg.drawImage(tinted(keyLeft?m.rimL:m.rimR,cw,ch,`rgb(${A.light})`),0,0,cw,ch,0,0,cw,ch);
+   tg.globalAlpha=.5;tg.drawImage(tinted(keyLeft?m.rimR:m.rimL,cw,ch,'rgb(130,165,255)'),0,0,cw,ch,0,0,cw,ch);
+   tg.globalAlpha=.7;tg.drawImage(m.spec,0,0,cw,ch);tg.globalAlpha=1;tg.globalCompositeOperation='source-atop'}
+  const g=tg.createLinearGradient(near>0?cw:0,0,near>0?0:cw,0);g.addColorStop(0,`rgba(${A.light},.18)`);g.addColorStop(.45,`rgba(${A.light},0)`);tg.fillStyle=g;tg.fillRect(0,0,cw,ch);
   const v=tg.createLinearGradient(0,0,0,ch);v.addColorStop(0,'rgba(170,190,255,.08)');v.addColorStop(.6,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,.38)');tg.fillStyle=v;tg.fillRect(0,0,cw,ch);
   if(f.flash>0){tg.fillStyle=`rgba(255,255,255,${Math.min(1,f.flash*5)})`;tg.fillRect(0,0,cw,ch)}
   if(f.st==='special'||f.st==='dash'||f.st==='win'){tg.fillStyle=f.def.c;tg.globalAlpha=.18+.1*Math.sin(f.t*30);tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
@@ -358,7 +396,9 @@ function drawFighter(f,t,refl=false){
  const body=IMG.body[f.def.n];if(!body||f.gone)return;const PF=punchFrame(f);const img=PF?IMG.punch[f.def.n]:body;
  const h=PF?FH*.9:FH,w=h*img.width/img.height;const p=PF?punchPose(f):pose(f,t);const shiftX=PF?(.5-PANCH[f.def.n])*w:0;
  if(!refl){// floor shadow
-  const air=Math.max(0,GY-f.y);ctx.save();ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(f.x,GY+6,w*.4*(1-air/700),16*(1-air/700),0,0,TAU);ctx.fill();ctx.restore();
+  const air=Math.max(0,GY-f.y);const lm=lightMaps(img);
+  if(lm&&air<200){ctx.save();ctx.globalAlpha=.32*(1-air/200);try{ctx.filter='blur(5px)'}catch(e){}ctx.translate(f.x,GY+4);const sk=f.x<WW/2?-.85:.85;ctx.transform(1,0,sk,.26,0,0);ctx.scale(f.facing,1);ctx.drawImage(lm.sil,-w/2+(PF?(.5-PANCH[f.def.n])*w:0),-h,w,h);ctx.restore();ctx.filter='none'}
+  ctx.save();ctx.fillStyle='rgba(0,0,0,.55)';ctx.beginPath();ctx.ellipse(f.x,GY+6,w*.36*(1-air/700),14*(1-air/700),0,0,TAU);ctx.fill();ctx.restore();
   // afterimages
   for(const tr of f.trail){ctx.save();ctx.globalAlpha=tr.a*.35;ctx.translate(tr.x,tr.y);ctx.scale(f.facing,1);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore()}
  }
@@ -490,7 +530,7 @@ function pickRandom(ex){const pool=PLAYABLE.filter(f=>f!==ex);return pool[Math.f
 function go(s){if(s==='vs')nextArena();scene=s;sceneT=0}
 function startMatch(){round=1;wins=[0,0];startRound()}
 function nextArena(){setArena(arenaIdx+1)}
-function startRound(){P1=mk(p1Def,WW/2-300*SC,1,false);P2=mk(p2Def,WW/2+300*SC,-1,true);projectiles=[];sparks=[];floaters=[];bolts=[];burst=[];aura=[];timer=60;roundOver=false;finish=null;timeScale=1;slowT=0;cam.x=WW/2;cam.z=1.6;
+function startRound(){warmMaps(p1Def);warmMaps(p2Def);P1=mk(p1Def,WW/2-300*SC,1,false);P2=mk(p2Def,WW/2+300*SC,-1,true);projectiles=[];sparks=[];floaters=[];bolts=[];burst=[];aura=[];timer=60;roundOver=false;finish=null;timeScale=1;slowT=0;cam.x=WW/2;cam.z=1.6;
  banner={s:`ROUND ${round}`,t:0,dur:1.3,next:{s:'FIGHT!',dur:.8,c:'#FA691D'}};SFX.bell();go('fight')}
 function endRound(winner,how){if(roundOver)return;roundOver=true;const loser=winner===P1?P2:P1;
  wins[winner===P1?0:1]++;const matchOver=wins[0]===2||wins[1]===2;
@@ -651,5 +691,5 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/
  camReset();if(!['result','select','title','vs'].includes(scene))click=null;
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
-window.__mk={get P1(){return P1},get scene(){return scene},IMG};
+window.__mk={get P1(){return P1},get scene(){return scene},IMG,lightMaps};
 })();
