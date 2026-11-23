@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='20';
+const V='22';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -687,7 +687,7 @@ const SEL_COLS=6;
 function gridRect(i){const tw=122,th=124,gap=8,cols=SEL_COLS,row=Math.floor(i/cols),inRow=Math.min(cols,SLOTS.length-row*cols),x0=(W-(inRow*tw+(inRow-1)*gap))/2;return{x:x0+(i%cols)*(tw+gap),y:150+row*(th+gap),w:tw,h:th}}
 function enemyRect(i){const n=ENEMIES.length,tw=88,th=96,gap=7,x0=(W-(n*tw+(n-1)*gap))/2;return{x:x0+i*(tw+gap),y:470,w:tw,h:th}}
 function pickRandom(ex){const pool=ENEMIES.filter(f=>f!==ex&&!f.boss);const boss=ENEMIES.find(f=>f.boss);if(boss&&streak>0&&streak%4===0)return boss;return pool[Math.floor(Math.random()*pool.length)]}
-function go(s){if(s==='vs')nextArena();scene=s;sceneT=0}
+function go(s){if(s==='roll')startRoll();scene=s;sceneT=0}
 function startMatch(){round=1;wins=[0,0];startRound()}
 function nextArena(){setArena(arenaIdx+1)}
 function startRound(){warmMaps(p1Def);warmMaps(p2Def);P1=mk(p1Def,WW/2-300*SC,1,false);P2=mk(p2Def,WW/2+300*SC,-1,true);projectiles=[];sparks=[];floaters=[];bolts=[];burst=[];aura=[];fxs=[];gore=[];splats=[];lightsPulse=[];callouts=[];lights=[];timer=60;roundOver=false;finish=null;timeScale=1;slowT=0;cam.x=WW/2;cam.z=1.6;
@@ -702,8 +702,49 @@ function endRound(winner,how){if(roundOver)return;roundOver=true;const loser=win
   finish={winner,loser,armed:true,cpuAt:winner===P2?2.4:99,t:0};return}
  if(how==='ko')setSt(loser,'ko');setSt(winner,'win');
  banner={s:how==='time'?'TIME!':'K.O.',t:0,dur:1.3,c:'#FF3B2E',next:{s:flawless?'FLAWLESS MEOWTORY':`${winner.def.name} WINS`,dur:1.8,c:winner.def.c},after:()=>{if(matchOver)finishMatch(winner,flawless,true);else{round++;startRound()}}}}
-function finishMatch(winner,flawless,already){const won=winner===P1;if(won){streak++;level++;if(streak>best){best=streak;store.set('best',best)}}else{level=Math.max(0,level-1)}
+function finishMatch(winner,flawless,already){const won=winner===P1;if(won){defeated.add(p2Def.n);streak++;level++;if(streak>best){best=streak;store.set('best',best)}}else{level=Math.max(0,level-1)}
  lastResult={won,me:p1Def,them:p2Def,streak:won?streak:0};if(!won)streak=0;go('result')}
+// ================= random select (stage + enemy roulette) =================
+let defeated=new Set(),roll=null;
+function startRoll(){let pool=ENEMIES.filter(e=>!defeated.has(e.n));let champ=false;if(!pool.length){champ=true;defeated=new Set();pool=ENEMIES.slice()}
+ const target=pool[Math.floor(Math.random()*pool.length)],aT=Math.floor(Math.random()*ARENAS.length);
+ const mk=(cands,tgtIdx,steps,base,grow)=>{const L=cands.length,ti=cands.indexOf(tgtIdx),st=((ti-(steps-1))%L+L)%L,seq=[];for(let k=0;k<steps;k++)seq.push(cands[(st+k)%L]);
+  const times=[];let tt=0;const N=seq.length;for(let s=0;s<N;s++){times.push(tt);tt+=base*(1+grow*Math.pow(s/N,2.2))}return{seq,times,end:tt}};
+ const eC=pool.map(e=>ENEMIES.indexOf(e)),eT=ENEMIES.indexOf(target);
+ roll={target,aT,champ,e:mk(eC,eT,Math.max(14,eC.length*2+2)+Math.floor(Math.random()*eC.length),.05,7),a:mk([...ARENAS.keys()],aT,9+Math.floor(Math.random()*3),.07,6),t:0,eI:-1,aI:-1}}
+function rollCur(R,t){let i=0;while(i<R.times.length-1&&t>=R.times[i+1])i++;return{v:R.seq[i],i,done:t>=R.times[R.times.length-1]+.05}}
+function updRoll(dt){const r=roll;r.t+=dt;const T0=r.champ?1.6:.35,t=r.t-T0;if(t<0)return;
+ const a=rollCur(r.a,t),e=rollCur(r.e,t);if(a.i!==r.aI){r.aI=a.i;if(!a.done)SFX.move()}if(e.i!==r.eI){r.eI=e.i;SFX.move()}
+ if(a.done&&!r.aLock){r.aLock=r.t;SFX.select()}if(e.done&&!r.eLock){r.eLock=r.t;SFX.special();p2Def=r.target}
+ if(r.eLock&&(r.t-r.eLock>2.1||((take('start')||take('punch')||click)&&r.t-r.eLock>.3))){click=null;setArena(r.aT);go('vs')}}
+function drawRoll(t,dt){const r=roll,T0=r.champ?1.6:.35,tt=r.t-T0;const a=tt<0?{v:r.aT,done:false}:rollCur(r.a,tt),e=tt<0?{v:-1,done:false}:rollCur(r.e,tt);
+ cam.x=WW/2;cam.z=1;const keep=arenaIdx;arenaIdx=a.v;A=ARENAS[arenaIdx];drawArena(t);arenaIdx=keep;A=ARENAS[arenaIdx];drawAtmos(t,dt);camReset();
+ ctx.fillStyle='rgba(6,4,10,.72)';ctx.fillRect(0,0,W,H);
+ drawLogo(W/2,48,190,10);txt('RANDOM SELECT',W/2,110,40,'#F4F2EE',{stroke:'#000',sw:7});
+ if(r.champ&&r.t<1.6){txt('ALL ENEMIES DEFEATED!',W/2,330,64,'',{metal:'#FFC94A',stroke:'#000',sw:10,glow:'#FFC94A'});txt('THE ROSTER RETURNS…',W/2,390,28,'#fff',{stroke:'#000',sw:5});return}
+ // stage cards
+ txt('STAGE',W/2,150,22,'#cfcbd8',{family:MONO});
+ const cw=300,ch=150,gap=22,x0=(W-(ARENAS.length*cw+(ARENAS.length-1)*gap))/2;
+ ARENAS.forEach((ar,i)=>{const x=x0+i*(cw+gap),y=162,on=i===a.v,img=ARTIMG[ar.id];ctx.save();ctx.globalAlpha=on?1:.45;ctx.fillStyle='#000';ctx.fillRect(x-3,y-3,cw+6,ch+6);
+  if(img){const s=Math.max(cw/img.width,ch/img.height);ctx.save();ctx.beginPath();ctx.rect(x,y,cw,ch);ctx.clip();ctx.drawImage(img,x+(cw-img.width*s)/2,y+(ch-img.height*s)/2,img.width*s,img.height*s);ctx.restore()}
+  const g=ctx.createLinearGradient(0,y+ch*.55,0,y+ch);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(1,'rgba(0,0,0,.85)');ctx.fillStyle=g;ctx.fillRect(x,y,cw,ch);txt(ar.name,x+cw/2,y+ch-12,24,'#fff',{stroke:'#000',sw:4});ctx.restore();
+  if(on){ctx.save();ctx.strokeStyle=a.done?'#FFC94A':'#fff';ctx.lineWidth=a.done?6:4;ctx.shadowColor=a.done?'#FFC94A':'#fff';ctx.shadowBlur=a.done?24:10;ctx.strokeRect(x-4,y-4,cw+8,ch+8);ctx.restore()}});
+ // enemy tiles
+ txt('OPPONENT',W/2,360,22,'#cfcbd8',{family:MONO});
+ const n=ENEMIES.length,tw=118,th=136,g2=10,ex=(W-(n*tw+(n-1)*g2))/2,ey=372;
+ ENEMIES.forEach((en,i)=>{const x=ex+i*(tw+g2),done=defeated.has(en.n),on=i===e.v;ctx.fillStyle=done?'#111':'#2a0c0c';ctx.fillRect(x-3,ey-3,tw+6,th+6);
+  ctx.save();if(done)ctx.filter='grayscale(1) brightness(.35)';drawPortrait(en.n,x,ey,tw,th);ctx.restore();
+  if(done){ctx.save();ctx.strokeStyle='rgba(200,30,30,.85)';ctx.lineWidth=6;ctx.beginPath();ctx.moveTo(x+14,ey+14);ctx.lineTo(x+tw-14,ey+th-14);ctx.moveTo(x+tw-14,ey+14);ctx.lineTo(x+14,ey+th-14);ctx.stroke();ctx.restore();
+   ctx.save();ctx.translate(x+tw/2,ey+th/2);ctx.rotate(-.25);txt('DEFEATED',0,8,20,'#ff5a4a',{stroke:'#000',sw:4});ctx.restore()}
+  else{const gg=ctx.createLinearGradient(0,ey+th*.6,0,ey+th);gg.addColorStop(0,'rgba(0,0,0,0)');gg.addColorStop(1,'rgba(0,0,0,.8)');ctx.fillStyle=gg;ctx.fillRect(x,ey,tw,th);txt(en.name.replace(/^THE /,''),x+tw/2,ey+th-8,en.name.length>11?12:15,'#fff',{stroke:'#000',sw:3})}
+  if(on){ctx.save();const lock=e.done;ctx.strokeStyle=lock?'#E0302A':'#fff';ctx.lineWidth=lock?7:4;ctx.shadowColor=lock?'#E0302A':'#fff';ctx.shadowBlur=lock?26+Math.sin(t*10)*8:10;ctx.strokeRect(x-4,ey-4,tw+8,th+8);ctx.restore()}});
+ txt(`${defeated.size} / ${n} DEFEATED`,W/2,ey+th+30,18,'#cfcbd8',{family:MONO});
+ // fighters
+ bigFighter(p1Def,130,712,195,false,p1Def.c+'66');
+ if(e.v>=0){const en=ENEMIES[e.v];bigFighter(en,W-130,712,195,true,e.done?en.c+'88':null)}
+ if(e.done){const k=Math.min(1,(r.t-r.eLock)/.25);ctx.save();ctx.globalAlpha=k;txt(`VS  ${r.target.name}`,W/2,640,54,'',{metal:'#FF3B2E',stroke:'#000',sw:9,glow:'#E0302A'});txt(`STAGE · ${ARENAS[r.aT].name}`,W/2,680,22,'#fff',{stroke:'#000',sw:4,family:MONO});ctx.restore()}
+ else txt('…',W/2,640,54,'#fff')}
+
 // ================= cinematic finisher layer =================
 const cine={k:0,run:0,dim:0,bars:0,vig:0,z:1,punch:0,red:0,lines:0,beat:0};
 let gore=[],splats=[];
@@ -818,7 +859,8 @@ function update(rdt){sceneT+=rdt;
   if(hover){for(let i=0;i<SLOTS.length;i++){const r=gridRect(i);if(hover.x>r.x&&hover.x<r.x+r.w&&hover.y>r.y&&hover.y<r.y+r.h)cursor=i}}
   let chosen=take('start')||take('punch');
   if(click){for(let i=0;i<SLOTS.length;i++){const r=gridRect(i);if(click.x>r.x&&click.x<r.x+r.w&&click.y>r.y&&click.y<r.y+r.h){cursor=i;chosen=true}}click=null}
-  if(chosen){p1Def=SLOTS[cursor]||pickRandom(null);p2Def=pickRandom(p1Def);streak=0;level=0;SFX.select();go('vs')}return}
+  if(chosen){p1Def=SLOTS[cursor]||SLOTS[Math.floor(Math.random()*SLOTS.length)];defeated=new Set();streak=0;level=0;SFX.select();go('roll')}return}
+ if(scene==='roll'){if(take('back')){go('select');return}updRoll(rdt);return}
  if(scene==='vs'){if(sceneT>2.6||((take('start')||click)&&sceneT>.5)){click=null;startMatch()}return}
  if(scene==='result'){if(click){const c=click;click=null;for(const b of resultButtons())if(c.x>b.x&&c.x<b.x+b.w&&c.y>b.y&&c.y<b.y+b.h)b.fn()}
   if(take('start')||take('punch'))resultButtons()[0].fn();if(take('back'))go('select');return}
@@ -950,7 +992,7 @@ function drawFight(t,dt){
   if(banner.sub&&Math.floor(banner.t*3)%2===0)txt(banner.sub,0,110,30,'#fff',{stroke:'#000',sw:5});ctx.restore()}
 }
 function resultButtons(){const won=lastResult&&lastResult.won;return[
- {x:W/2-310,y:520,w:300,h:70,label:won?'NEXT FIGHT':'REMATCH',fn:()=>{if(won)p2Def=pickRandom(p1Def);SFX.select();go('vs')}},
+ {x:W/2-310,y:520,w:300,h:70,label:won?'NEXT FIGHT':'REMATCH',fn:()=>{SFX.select();go(won?'roll':'vs')}},
  {x:W/2+10,y:520,w:300,h:70,label:'NEW FIGHTER',fn:()=>{SFX.select();go('select')}},
  {x:W/2-150,y:610,w:300,h:56,label:'SHARE ON X',fn:share}]}
 function share(){const r=lastResult;const text=r.won?`I beat ${r.them.name} with ${r.me.name} in MEOWRTAL KOMBAT. Win streak: ${r.streak} 🥷🐈 $MEOWNERO`:`${r.them.name} just sent my ${r.me.name} to the shadow realm in MEOWRTAL KOMBAT. Rematch incoming. $MEOWNERO`;
@@ -958,16 +1000,16 @@ function share(){const r=lastResult;const text=r.won?`I beat ${r.them.name} with
 function drawResult(t,dt){cam.x=WW/2;cam.z=1.05;drawArena(t);drawAtmos(t,dt);camReset();ctx.fillStyle='rgba(0,0,0,.55)';ctx.fillRect(0,0,W,H);const r=lastResult;
  bigFighter(r.won?r.me:r.them,W/2,490+(r.won?-Math.abs(Math.sin(t*5))*10:0),380,false,(r.won?r.me:r.them).c);
  drawLogo(W/2,60,230,14);txt(r.won?'MEOWTORY':'DEFEAT',W/2,165,110,'',{metal:r.won?'#FA691D':'#FF3B2E',stroke:'#000',sw:14});
- txt(r.won?`WIN STREAK ${r.streak}   ·   BEST ${best}`:`${r.them.name} WINS   ·   BEST STREAK ${best}`,W/2,200,28,'#fff',{stroke:'#000',sw:5});
+ txt(r.won?`${defeated.size}/${ENEMIES.length} ENEMIES DEFEATED   ·   STREAK ${r.streak}`:`${r.them.name} WINS   ·   BEST STREAK ${best}`,W/2,200,28,'#fff',{stroke:'#000',sw:5});
  for(const b of resultButtons()){const hov=hover&&hover.x>b.x&&hover.x<b.x+b.w&&hover.y>b.y&&hover.y<b.y+b.h;const x=b.label==='SHARE ON X';ctx.fillStyle=x?'#000':hov?'#ffb37f':'#FA691D';rr(b.x,b.y,b.w,b.h,12);ctx.fill();ctx.strokeStyle=x?'#fff':'#000';ctx.lineWidth=x?2:4;ctx.stroke();txt(b.label,b.x+b.w/2,b.y+b.h/2+14,b.h>60?40:30,x?'#fff':'#17161A')}}
 
 // ================= loop =================
 let last=performance.now();
 function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/1000;
  update(dt);camReset();ctx.clearRect(0,0,W,H);
- if(scene==='title')drawTitle(t,dt);else if(scene==='select')drawSelect(t,dt);else if(scene==='vs')drawVS(t,dt);else if(scene==='fight')drawFight(t,dt);else drawResult(t,dt);
+ if(scene==='title')drawTitle(t,dt);else if(scene==='select')drawSelect(t,dt);else if(scene==='vs')drawVS(t,dt);else if(scene==='roll')drawRoll(t,dt);else if(scene==='fight')drawFight(t,dt);else drawResult(t,dt);
  camReset();if(!['result','select','title','vs'].includes(scene))click=null;
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
-window.__mk={get P1(){return P1},get scene(){return scene},get finish(){return finish},spdemo(n,dist){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;P1.x=WW/2-dist/2;P2.x=WW/2+dist/2;P1.spCd=0;__mk.noAI=true;setTimeout(()=>{P1.spCd=0;doSpecial(P1)},300)},get P2(){return P2},dbg(){return [hitStop,timeScale,slowT,scene,roundOver]},IMG,lightMaps,demo(n){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;wins=[1,0];P2.hp=0;endRound(P1,'ko');slowT=0;timeScale=1;triggerCatality()}};
+window.__mk={get P1(){return P1},get scene(){return scene},get finish(){return finish},spdemo(n,dist){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;P1.x=WW/2-dist/2;P2.x=WW/2+dist/2;P1.spCd=0;__mk.noAI=true;setTimeout(()=>{P1.spCd=0;doSpecial(P1)},300)},get P2(){return P2},setDef(a){defeated=new Set(a)},goRoll(){go('roll')},dbg(){return [hitStop,timeScale,slowT,scene,roundOver]},IMG,lightMaps,demo(n){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;wins=[1,0];P2.hp=0;endRound(P1,'ko');slowT=0;timeScale=1;triggerCatality()}};
 })();
