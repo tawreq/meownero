@@ -122,8 +122,8 @@ const V='3';function load(src,tries=0){return new Promise(res=>{const i=new Imag
 function whiteOf(img){const c=document.createElement('canvas');c.width=img.width;c.height=img.height;const g=c.getContext('2d');g.drawImage(img,0,0);g.globalCompositeOperation='source-in';g.fillStyle='#fff';g.fillRect(0,0,c.width,c.height);return c}
 let loaded=0;const total=PLAYABLE.length*2;
 const ready=Promise.all(PLAYABLE.flatMap(f=>[
-  load(`f/${pad(f.n)}.webp`).then(i=>{IMG.body[f.n]=i;if(i)IMG.white[f.n]=whiteOf(i);loaded++}),
-  load(`p/${pad(f.n)}.webp`).then(i=>{IMG.por[f.n]=i;loaded++})
+  load(`/kombat/f/${pad(f.n)}.webp`).then(i=>{IMG.body[f.n]=i;if(i)IMG.white[f.n]=whiteOf(i);loaded++}),
+  load(`/kombat/p/${pad(f.n)}.webp`).then(i=>{IMG.por[f.n]=i;loaded++})
 ]).concat([document.fonts?document.fonts.load('80px "Anton"').then(()=>document.fonts.load('40px "Dela Gothic One"')).catch(()=>{}):Promise.resolve()]));
 
 // ---------- storage (best streak) ----------
