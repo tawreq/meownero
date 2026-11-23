@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='8';
+const V='9';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -198,17 +198,16 @@ function paintShrine(){const c=mkCanvas(FAR_W,H),g=c.getContext('2d'),rnd=seeded
  return blurInto(c,.7)}
 
 const ARENAS=[
- {id:'sanctum',name:'PAW SANCTUM',paint:paintTemple,floor:['#2e2b35','#3a3642','#141318'],tile:130,lines:'rgba(0,0,0,.5)',light:'255,165,90',refl:.22,fx:'embers',grade:'rgba(255,140,60,.1)',shafts:'255,220,170',props:'temple',ground:.845},
- {id:'temple',name:'SHADOW TEMPLE',paint:paintTemple,floor:['#2e2b35','#3a3642','#141318'],tile:130,lines:'rgba(0,0,0,.5)',light:'255,150,60',refl:.2,fx:'embers',grade:'rgba(255,120,40,.12)',shafts:'120,150,220',props:'temple'},
- {id:'rooftop',name:'NEON ROOFTOP',paint:paintRooftop,floor:['#1b1a24','#24222e','#0b0a10'],tile:170,lines:'rgba(120,200,255,.12)',light:'255,80,210',refl:.38,fx:'rain',grade:'rgba(90,60,200,.14)',shafts:null,props:'rooftop'},
- {id:'shrine',name:'SAKURA SHRINE',paint:paintShrine,floor:['#6b4a3a','#5a3b2e','#24160f'],tile:0,lines:'rgba(30,15,8,.55)',light:'255,180,110',refl:.12,fx:'petals',grade:'rgba(255,140,90,.12)',shafts:'255,200,140',props:'shrine'},
+ {id:'tokyo',name:'TOKYO GATE',paint:paintRooftop,floor:['#1b1a24','#24222e','#0b0a10'],tile:170,lines:'rgba(120,200,255,.12)',light:'255,150,95',refl:.3,fx:'petals',grade:'rgba(255,110,80,.1)',shafts:null,props:'rooftop',ground:.83},
+ {id:'mountain',name:'SUNSET TEMPLE',paint:paintShrine,floor:['#6b4a3a','#5a3b2e','#24160f'],tile:0,lines:'rgba(30,15,8,.55)',light:'255,175,105',refl:.26,fx:'embers',grade:'rgba(255,140,80,.1)',shafts:'255,210,150',props:'shrine',ground:.83},
+ {id:'jungle',name:'JUNGLE SHRINE',paint:paintTemple,floor:['#2e2b35','#3a3642','#141318'],tile:130,lines:'rgba(0,0,0,.5)',light:'255,160,80',refl:.24,fx:'embers',grade:'rgba(255,140,60,.1)',shafts:'255,225,170',props:'temple',ground:.86},
 ];
-let arenaIdx=store.get('arena2',ARENAS.length-1)%ARENAS.length,A=ARENAS[arenaIdx];
+let arenaIdx=store.get('arena3',Math.floor(Math.random()*ARENAS.length))%ARENAS.length,A=ARENAS[arenaIdx];
 const FAR={};function farOf(a){if(!FAR[a.id])FAR[a.id]=a.paint();return FAR[a.id]}
 // optional painted backdrops: /kombat/arena/<id>.webp (16:9, horizon at ~63% height). Used automatically when present.
-const ART_FILES=['sanctum']; // add arena ids here once their images are uploaded, e.g. ['temple']
+const ART_FILES=['tokyo','mountain','jungle']; // add arena ids here once their images are uploaded, e.g. ['temple']
 const ARTIMG={};ARENAS.filter(a=>ART_FILES.includes(a.id)).forEach(a=>{const i=new Image();i.onload=()=>{ARTIMG[a.id]=i};i.src=`/kombat/arena/${a.id}.webp?v=${V}`});
-function setArena(i){const n=ARENAS.length;arenaIdx=(i+n)%n;A=ARENAS[arenaIdx];store.set('arena2',arenaIdx);initFx()}
+function setArena(i){const n=ARENAS.length;arenaIdx=(i+n)%n;A=ARENAS[arenaIdx];store.set('arena3',arenaIdx);initFx()}
 
 // ---------- world props per arena ----------
 const BRAZ=[WW/2-660,WW/2+660];
