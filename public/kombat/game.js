@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='6';
+const V='7';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -50,12 +50,14 @@ const PLAYABLE=R.filter(Boolean);
 const pad=n=>String(n).padStart(2,'0');
 
 // ================= assets =================
-const IMG={body:{},por:{},px:{}};
+const IMG={body:{},por:{},px:{},punch:{}};
+const PANCH={1:.442,2:.418,3:.431,4:.419,5:.448,6:.42,8:.41,9:.45,10:.43,11:.436,12:.449,13:.412,14:.453,15:.437,16:.44,17:.43,18:.431,19:.455,20:.426,21:.456,22:.449,23:.441,24:.44,25:.44,26:.427,27:.428,28:.459};
 function load(src,tries=0){return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>{if(tries<6)setTimeout(()=>load(src,tries+1).then(res),800*(tries+1));else res(null)};i.src=src+'?v='+V+(tries?'&r='+tries:'')})}
 let loaded=0;const total=PLAYABLE.length*2;
 PLAYABLE.forEach(f=>{
  load(`/kombat/f/${pad(f.n)}.webp`).then(i=>{IMG.body[f.n]=i;loaded++});
  load(`/kombat/p/${pad(f.n)}.webp`).then(i=>{IMG.por[f.n]=i;loaded++});
+ if(PANCH[f.n])load(`/kombat/f/${pad(f.n)}-punch.webp`).then(i=>{if(i)IMG.punch[f.n]=i});
 });
 if(document.fonts)document.fonts.load('80px "Anton"').catch(()=>{});
 // pixel sample of a sprite (for the finisher burst)
@@ -306,7 +308,7 @@ const bodyW=f=>{const img=IMG.body[f.def.n];return img?FH*img.width/img.height:2
 
 // sprite compositor: lights the sprite into a temp canvas
 const tc=document.createElement('canvas'),tg=tc.getContext('2d');
-function litSprite(f,w,h,refl){const img=IMG.body[f.def.n];const s=Math.min(2,cam.z*1.15);const cw=Math.ceil(w*s),ch=Math.ceil(h*s);if(tc.width<cw||tc.height<ch){tc.width=Math.max(tc.width,cw);tc.height=Math.max(tc.height,ch)}
+function litSprite(f,w,h,refl,img){img=img||IMG.body[f.def.n];const s=Math.min(2,cam.z*1.15);const cw=Math.ceil(w*s),ch=Math.ceil(h*s);if(tc.width<cw||tc.height<ch){tc.width=Math.max(tc.width,cw);tc.height=Math.max(tc.height,ch)}
  tg.setTransform(1,0,0,1,0,0);tg.clearRect(0,0,cw+2,ch+2);tg.globalCompositeOperation='source-over';tg.imageSmoothingQuality='high';tg.drawImage(img,0,0,cw,ch);
  tg.globalCompositeOperation='source-atop';
  if(!refl){// key light from the near brazier + floor bounce + dark feet
@@ -317,6 +319,9 @@ function litSprite(f,w,h,refl){const img=IMG.body[f.def.n];const s=Math.min(2,ca
  }else{tg.fillStyle='rgba(20,18,26,.35)';tg.fillRect(0,0,cw,ch)}
  tg.globalCompositeOperation='source-over';return{cw,ch}}
 
+// pose while showing the dedicated punch image: a short lunge and settle
+function punchPose(f){const m=MOVES.punch;const k=f.st==='punch'?clamp((f.t-m.hitAt+.045)/(m.dur-m.hitAt),0,1):clamp((f.t-.12)/.26,0,1);const s=Math.pow(1-k,1.4);
+ return{ox:(10+24*s)*SC,oy:0,rot:.02*s,sx:1+.04*s,sy:1-.02*s,top:6*s*SC,leg:0,lift:0,spin:0,pivot:'feet'}}
 // pose: returns transform + per-slice warp
 function pose(f,t){const p={ox:0,oy:0,rot:0,sx:1,sy:1,top:0,leg:0,lift:0,spin:0,pivot:'feet'};const k=f.t;
  switch(f.st){
@@ -348,20 +353,23 @@ function drawWarp(cw,ch,w,h,p,glow){const N=34,s=cw/w,padX=Math.ceil(330*SC*s),p
  ctx.drawImage(wcv,0,0,WW2,HH2,-w/2-padX/s,-h-padT/s,WW2/s,HH2/s);
  ctx.shadowBlur=0;ctx.shadowColor='transparent'}
 
+function punchFrame(f){if(!IMG.punch[f.def.n])return false;const m=MOVES.punch;return (f.st==='punch'&&f.t>=m.hitAt-.045&&f.t<m.dur-.04)||(f.st==='special'&&f.t>=.12&&f.t<.38)}
 function drawFighter(f,t,refl=false){
- const img=IMG.body[f.def.n];if(!img||f.gone)return;const w=bodyW(f),h=FH;const p=pose(f,t);
+ const body=IMG.body[f.def.n];if(!body||f.gone)return;const PF=punchFrame(f);const img=PF?IMG.punch[f.def.n]:body;
+ const h=PF?FH*.9:FH,w=h*img.width/img.height;const p=PF?punchPose(f):pose(f,t);const shiftX=PF?(.5-PANCH[f.def.n])*w:0;
  if(!refl){// floor shadow
   const air=Math.max(0,GY-f.y);ctx.save();ctx.fillStyle='rgba(0,0,0,.5)';ctx.beginPath();ctx.ellipse(f.x,GY+6,w*.4*(1-air/700),16*(1-air/700),0,0,TAU);ctx.fill();ctx.restore();
   // afterimages
   for(const tr of f.trail){ctx.save();ctx.globalAlpha=tr.a*.35;ctx.translate(tr.x,tr.y);ctx.scale(f.facing,1);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore()}
  }
- const {cw,ch}=litSprite(f,w,h,refl);
+ const {cw,ch}=litSprite(f,w,h,refl,img);
  ctx.save();
  const sh=f.shake?Math.sin(f.shake*90)*6:0;
  if(refl){ctx.globalAlpha=A.refl;ctx.translate(f.x+p.ox*f.facing,GY+(GY-f.y)+4);ctx.scale(f.facing,-.55)}
  else{ctx.translate(f.x+p.ox*f.facing+sh,f.y+p.oy)}
  if(p.pivot==='center'){ctx.translate(0,-h/2);ctx.rotate(p.spin*f.facing);ctx.translate(0,h/2)}else ctx.rotate(p.rot*f.facing);
  if(!refl)ctx.scale(f.facing*p.sx,p.sy);else ctx.scale(p.sx,p.sy);
+ if(shiftX)ctx.translate(shiftX,0);
  drawWarp(cw,ch,w,h,p,refl||f.st==='ko'?null:{c:hexA(f.def.c,.8),b:(f.st==='special'||f.st==='dash'||f.st==='win'?46:22+Math.sin(t*6+f.x)*5)*cam.z});
  ctx.restore();
  if(refl)return;
@@ -369,7 +377,8 @@ function drawFighter(f,t,refl=false){
  const arc=(m,yy,col,width)=>{const k=(f.t-m.hitAt)/.14;if(k<0||k>1)return;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=(1-k)*.9;ctx.strokeStyle=col;ctx.lineWidth=width*(1-k)+3;ctx.lineCap='round';ctx.shadowColor=col;ctx.shadowBlur=18;ctx.beginPath();const cx=f.x+f.facing*(w*.2+m.reach*.38);const r=(70+k*40)*SC;ctx.arc(cx,f.y-h*yy,r,f.facing>0?-1.1:Math.PI-1.1+0,f.facing>0?1.1:Math.PI+1.1);ctx.stroke();
   // speed lines
   ctx.lineWidth=2;for(let i=0;i<5;i++){const yy2=f.y-h*yy+(i-2)*14;ctx.beginPath();ctx.moveTo(f.x+f.facing*(w*.1),yy2);ctx.lineTo(f.x+f.facing*(w*.1+m.reach*(.55+.1*i%2)),yy2);ctx.stroke()}ctx.restore()};
- if(f.st==='punch')arc(MOVES.punch,.6,'#ffffff',12);if(f.st==='kick')arc(MOVES.kick,.28,f.def.c,16);if(f.st==='upper')arc(MOVES.upper,.7,'#ffd27a',14);
+ if(f.st==='punch'&&!PF)arc(MOVES.punch,.6,'#ffffff',12);
+ if(PF&&f.st==='punch'){const k=(f.t-MOVES.punch.hitAt)/.12;if(k>=0&&k<1){const fx=f.x+f.facing*(w*(1-PANCH[f.def.n])+p.ox-10*SC),fy=f.y-h*.8;ctx.save();ctx.globalCompositeOperation='lighter';const r=(30+k*70)*SC,g=ctx.createRadialGradient(fx,fy,0,fx,fy,r);g.addColorStop(0,`rgba(255,255,255,${1-k})`);g.addColorStop(.4,hexA(f.def.c,.7*(1-k)));g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(fx-r,fy-r,r*2,r*2);ctx.restore()}}if(f.st==='kick')arc(MOVES.kick,.28,f.def.c,16);if(f.st==='upper')arc(MOVES.upper,.7,'#ffd27a',14);
  if(f.st==='block'){ctx.save();ctx.globalCompositeOperation='lighter';ctx.strokeStyle=f.def.c;ctx.globalAlpha=.6+.2*Math.sin(t*20);ctx.lineWidth=7;ctx.shadowColor=f.def.c;ctx.shadowBlur=22;ctx.beginPath();const cx=f.x+f.facing*w*.18;ctx.arc(cx,f.y-h*.5,h*.46,f.facing>0?-1.05:Math.PI-1.05,f.facing>0?1.05:Math.PI+1.05);ctx.stroke();ctx.restore()}
  if(f.st==='special'&&f.t<.16){ctx.save();ctx.globalCompositeOperation='lighter';const r=40+f.t*500,g=ctx.createRadialGradient(f.x+f.facing*60,f.y-h*.55,2,f.x+f.facing*60,f.y-h*.55,r);g.addColorStop(0,'#fff');g.addColorStop(.3,f.def.c);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(f.x-r*2,f.y-h-r,r*4,h+r*2);ctx.restore()}
  if(f.st==='dizzy'){for(let i=0;i<3;i++){const a=t*4+i*TAU/3;txt('★',f.x+Math.cos(a)*50,f.y-h-10+Math.sin(a)*12,26,'#FFE14D',{stroke:'#000',sw:4})}}
@@ -461,7 +470,7 @@ function separate(){const min=190*SC;const dx=P2.x-P1.x;if(Math.abs(dx)<min&&Mat
 
 // ================= AI =================
 let level=0;
-function aiCtl(f,o,dt){const c={};const d=Math.min(1,.25+level*.12+round*.05);const a=f.ai;a.t-=dt;
+function aiCtl(f,o,dt){if(window.__mk&&window.__mk.noAI)return {};const c={};const d=Math.min(1,.25+level*.12+round*.05);const a=f.ai;a.t-=dt;
  if(busy(f))return c;
  if(a.act&&a.until>0){a.until-=dt;Object.assign(c,a.act);if(a.until<=0)a.act=null;return c}
  if(a.t>0)return c;a.t=.16-.08*d+Math.random()*.12;
@@ -642,4 +651,5 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/
  camReset();if(!['result','select','title','vs'].includes(scene))click=null;
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
+window.__mk={get P1(){return P1},get scene(){return scene},IMG};
 })();
