@@ -79,7 +79,7 @@ canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-
 (()=>{
 'use strict';
 const W=1280,H=720,GY=650,LEFT=120,RIGHT=1160,FH=300;
-const cv=document.getElementById('c'),ctx=cv.getContext('2d');
+const cv=document.getElementById('c'),ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
 
 // ---------- roster ----------
 // sp: special move. p = projectile, d = dash. fx: projectile look.
