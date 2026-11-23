@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='22';
+const V='23';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -80,7 +80,7 @@ const IMG={body:{},por:{},px:{},punch:{},kick:{},block:{}};
 const PANCH={7:.5,1:.442,2:.418,3:.431,4:.419,5:.448,6:.42,8:.41,9:.45,10:.43,11:.436,12:.449,13:.412,14:.453,15:.437,16:.44,17:.43,18:.431,19:.455,20:.426,21:.456,22:.449,23:.441,24:.44,25:.44,26:.427,27:.428,28:.459};
 function load(src,tries=0){return new Promise(res=>{const i=new Image();i.onload=()=>res(i);i.onerror=()=>{if(tries<6)setTimeout(()=>load(src,tries+1).then(res),800*(tries+1));else res(null)};i.src=src+'?v='+V+(tries?'&r='+tries:'')})}
 let loaded=0;const total=PLAYABLE.length*2;
-load('/kombat/logo.webp').then(i=>{IMG.logo=i});
+{const li=new Image();li.fetchPriority='high';li.onload=()=>{IMG.logo=li};li.onerror=()=>load('/kombat/logo.webp').then(i=>{IMG.logo=i});li.src='/kombat/logo.webp?v='+V}
 function drawLogo(cx,cy,w,glow){const L=IMG.logo;if(!L)return false;const h=w*L.height/L.width;ctx.save();if(glow){ctx.shadowColor='rgba(255,110,30,.55)';ctx.shadowBlur=glow}ctx.drawImage(L,cx-w/2,cy-h/2,w,h);ctx.restore();return true}
 PLAYABLE.forEach(f=>{
  load(`/kombat/f/${pad(f.n)}.webp`).then(i=>{IMG.body[f.n]=i;loaded++});
@@ -902,7 +902,7 @@ function drawPortrait(n,x,y,w,h){const img=IMG.por[n];if(!img){ctx.fillStyle='#2
 function bigFighter(def,x,y,h,flip,glow){const img=IMG.body[def.n];if(!img)return;const w=img.width*h/img.height;ctx.save();if(glow){ctx.shadowColor=glow;ctx.shadowBlur=40}ctx.translate(x,y);ctx.scale(flip?-1:1,1);ctx.drawImage(img,-w/2,-h,w,h);ctx.restore()}
 function title3D(a,b,y,s){ctx.save();ctx.translate(W/2,y);ctx.rotate(-.03);ctx.scale(s,s);for(let i=10;i>0;i--)txt(a,i*.8,-40+i*.8,150,'#3a1205');txt(a,0,-40,150,'',{metal:'#FA691D',stroke:'#000',sw:14});for(let i=10;i>0;i--)txt(b,i*.8,100+i*.8,150,'#24212b');txt(b,0,100,150,'',{metal:'#c9c4d4',stroke:'#000',sw:14});ctx.restore()}
 function drawTitle(t,dt){cam.x=WW/2+Math.sin(t*.2)*200;cam.z=1.05;drawArena(t);drawAtmos(t,dt);camReset();
- ctx.fillStyle='rgba(8,7,12,.45)';ctx.fillRect(0,0,W,H);{const sc=1+Math.sin(t*2.2)*.012;if(!drawLogo(W/2,250,860*sc,30+Math.sin(t*3)*12))title3D('MEOWRTAL','KOMBAT',300,sc)}
+ ctx.fillStyle='rgba(8,7,12,.45)';ctx.fillRect(0,0,W,H);{const sc=1+Math.sin(t*2.2)*.012;drawLogo(W/2,250,860*sc,30+Math.sin(t*3)*12)}
  txt('ミャウネロ格闘',W/2,505,28,'#FA691D',{family:DELA,glow:'#FA691D'});
  const n=PLAYABLE.length;for(let i=0;i<9;i++){const f=PLAYABLE[(Math.floor(t*.6)+i)%n];bigFighter(f,130+i*128,640,165,i>=5)}
  if(Math.floor(t*2)%2===0)txt(matchMedia('(pointer:coarse)').matches?'TAP TO START':'PRESS ENTER',W/2,700,32,'#fff',{stroke:'#000',sw:6});
