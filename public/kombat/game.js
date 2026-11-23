@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='29';
+const V='30';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -106,25 +106,79 @@ const store={get(k,d){try{const v=localStorage.getItem('mk_'+k);return v==null?d
 let AC=null,muted=store.get('muted',false);
 const muteBtn=document.getElementById('mute');
 function syncMute(){muteBtn.textContent=muted?'SOUND OFF':'SOUND ON';muteBtn.setAttribute('aria-pressed',String(muted))}
-syncMute();muteBtn.addEventListener('click',()=>{muted=!muted;store.set('muted',muted);syncMute();muteBtn.blur()});
-function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
+syncMute();muteBtn.addEventListener('click',()=>{muted=!muted;store.set('muted',muted);syncMute();muteBtn.blur();if(muted&&typeof ambient==='function')ambient('');else if(scene==='fight'&&typeof AMB!=='undefined'){const am=AMB[A.id];if(am){SND.ambName='';ambient(am[0],am[1])}}});
+function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)();setTimeout(sndInit,0)}catch(e){}}if(AC&&AC.state==='suspended')AC.resume();return AC}
 function noise(dur,freq,vol,type='lowpass'){const a=ac();if(!a||muted)return;const n=a.createBufferSource(),b=a.createBuffer(1,Math.floor(a.sampleRate*dur),a.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/d.length,2);n.buffer=b;const f=a.createBiquadFilter();f.type=type;f.frequency.value=freq;const g=a.createGain();g.gain.value=vol;n.connect(f).connect(g).connect(a.destination);n.start()}
 function tone(f0,f1,dur,type,vol){const a=ac();if(!a||muted)return;const o=a.createOscillator(),g=a.createGain();o.type=type;o.frequency.setValueAtTime(f0,a.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(20,f1),a.currentTime+dur);g.gain.setValueAtTime(vol,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+dur);o.connect(g).connect(a.destination);o.start();o.stop(a.currentTime+dur)}
 const SFX={
- thud:()=>{tone(90,30,.35,'sine',.4);noise(.25,400,.12,'lowpass')},
- whoosh:()=>noise(.14,2200,.16,'bandpass'),
- heavyWhoosh:()=>noise(.22,1200,.22,'bandpass'),
- hit:()=>{noise(.18,800,.55);tone(170,55,.16,'square',.13)},
- heavy:()=>{noise(.3,500,.7);tone(120,35,.3,'sawtooth',.16)},
- block:()=>{tone(1100,600,.07,'square',.08);noise(.05,4000,.14,'highpass')},
- special:()=>{tone(200,900,.32,'sawtooth',.09);noise(.25,3000,.08,'highpass')},
- ko:()=>{tone(300,40,1.1,'sawtooth',.2);noise(.8,350,.5)},
- thunder:()=>{noise(.9,600,.7);tone(90,30,.8,'sawtooth',.15)},
- select:()=>tone(660,990,.08,'square',.07),
- move:()=>tone(440,440,.03,'square',.04),
- bell:()=>{tone(880,860,.7,'triangle',.15);tone(1320,1300,.6,'sine',.06)},
- land:()=>noise(.1,300,.25),
+ thud:()=>{if(!pv('hard',10,{vol:.9,rate:.8}))tone(90,30,.35,'sine',.4);play('impactsub',{vol:.6})},
+ whoosh:()=>{if(!pv('whs',8,{vol:.55}))noise(.14,2200,.16,'bandpass')},
+ heavyWhoosh:()=>{if(!pv('wsw',12,{vol:.7}))noise(.22,1200,.22,'bandpass')},
+ hit:()=>{if(!pv('punch',6,{vol:.8}))noise(.18,800,.55)},
+ heavy:()=>{if(!pv('hard',10,{vol:.9})){noise(.3,500,.7);tone(120,35,.3,'sawtooth',.16)}},
+ block:()=>{if(!pv('block',2,{vol:.7}))tone(1100,600,.07,'square',.08)},
+ special:()=>{if(!play('shimmer',{vol:.5}))tone(200,900,.32,'sawtooth',.09)},
+ ko:()=>{if(!play('subboom',{vol:.9,force:true}))tone(300,40,1.1,'sawtooth',.2)},
+ thunder:()=>{if(!play(Math.random()<.5?'thunder':'thunderboom',{vol:.85}))noise(.9,600,.7)},
+ select:()=>{if(!play('hitwave',{vol:.6,rate:1.1}))tone(660,990,.08,'square',.07)},
+ move:()=>{if(!pv('fhit',3,{vol:.35,rate:1.6}))tone(440,440,.03,'square',.04)},
+ bell:()=>{if(!play('rippler',{vol:.7}))tone(880,860,.7,'triangle',.15)},
+ land:()=>{if(!pv('land',7,{vol:.6}))noise(.1,300,.25)},
 };
+// ================= sample sound bank (Splice one-shots, see /kombat/sfx) =================
+const SNDLIST=["agony", "amb_crowd", "amb_float", "amb_forest", "appear", "armor1", "armor2", "armor3", "armor4", "armor5", "bats", "batwings", "block1", "block2", "bodydrop", "bone1", "bone10", "bone11", "bone12", "bone13", "bone14", "bone15", "bone16", "bone17", "bone18", "bone19", "bone2", "bone3", "bone4", "bone5", "bone6", "bone7", "bone8", "bone9", "breath", "breathe", "carcrash", "chaingate", "cheetah", "clown", "creak1", "creak2", "creak3", "creak4", "creak5", "creak6", "creaturestep", "crow", "crowdchaos", "crunchl1", "crunchl2", "crunchl3", "crunchl4", "darksky", "demented", "dwarflaugh", "explosion", "fhit1", "fhit2", "fhit3", "fireball", "glitch", "goo1", "goo2", "goo3", "goo4", "goo5", "goo6", "gravity", "growl1", "growl2", "growl3", "gusts", "gwhisper", "hammer", "hard1", "hard10", "hard2", "hard3", "hard4", "hard5", "hard6", "hard7", "hard8", "hard9", "heart1", "heart2", "heartbeat", "hitwave", "impactsub", "jbowed", "jstab", "kick1", "kick2", "kick3", "kick4", "kick5", "kidlaugh", "knife1", "knife2", "knifefin", "land1", "land2", "land3", "land4", "land5", "land6", "land7", "lava", "lightcast", "log", "machinery", "meow1", "meow2", "meow3", "meow4", "meow5", "meow6", "meow7", "meowpurr", "mvh1", "mvh2", "mvh3", "mvh4", "mvh5", "mvh6", "mvh7", "ninjajump", "orccough", "owl", "pad1", "pad2", "pad3", "pestab1", "pestab2", "punch1", "punch2", "punch3", "punch4", "punch5", "punch6", "purr", "quake", "rippler", "rumble", "scream1", "scream2", "scream3", "scream4", "screamhit", "sewer", "sheath", "shimmer", "slambarrel", "slamcrack", "slap1", "slap2", "slap3", "slap4", "slap5", "snap1", "snap2", "snap3", "snap4", "snarl", "sniff", "spell", "spit", "splash1", "splash2", "splash3", "splash4", "squelch1", "squelch10", "squelch11", "squelch12", "squelch13", "squelch14", "squelch2", "squelch3", "squelch4", "squelch5", "squelch6", "squelch7", "squelch8", "squelch9", "stab1", "stab2", "stab3", "stab4", "stab5", "strangewind", "subboom", "swell", "swordscrape", "thud", "thunder", "thunderboom", "undead", "unsheathe", "watersplash", "weff1", "weff2", "weff3", "weff4", "weff5", "whisp2", "whisp3", "whispers", "whs1", "whs2", "whs3", "whs4", "whs5", "whs6", "whs7", "whs8", "windstorm", "woodpecker", "wrope1", "wrope2", "wrope3", "wsnarl", "wspin1", "wspin2", "wspin3", "wsw1", "wsw10", "wsw11", "wsw12", "wsw2", "wsw3", "wsw4", "wsw5", "wsw6", "wsw7", "wsw8", "wsw9"];
+const SND={buf:{},started:false,active:0,master:null,amb:null,ambName:''};
+function sndInit(){const a=AC;if(!a||SND.started)return;SND.started=true;SND.master=a.createGain();SND.master.gain.value=.9;const comp=a.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;SND.master.connect(comp);comp.connect(a.destination);
+ let i=0;const next=()=>{if(i>=SNDLIST.length)return;const n=SNDLIST[i++];fetch('/kombat/sfx/'+n+'.mp3?v='+V).then(r=>r.arrayBuffer()).then(ab=>new Promise((res,rej)=>a.decodeAudioData(ab,res,rej))).then(b=>{SND.buf[n]=b}).catch(()=>{}).finally(next)};for(let k=0;k<6;k++)next()}
+function play(n,o={}){const a=ac();if(!a||muted||!SND.master)return false;const b=SND.buf[n];if(!b)return false;if(SND.active>28&&!o.force)return true;
+ const s=a.createBufferSource();s.buffer=b;s.playbackRate.value=(o.rate||1)*(1+(Math.random()-.5)*(o.jit??.08));const g=a.createGain();g.gain.value=o.vol??.8;s.connect(g);let out=g;
+ if(o.pan!=null&&a.createStereoPanner){const p=a.createStereoPanner();p.pan.value=clamp(o.pan,-1,1);g.connect(p);out=p}out.connect(SND.master);SND.active++;s.onended=()=>{SND.active--};s.start(a.currentTime+(o.delay||0));return true}
+const pv=(base,count,o)=>play(base+(1+Math.floor(Math.random()*count)),o);
+const panOf=f=>f?clamp((f.x-cam.x)/700,-.8,.8):0;
+function ambient(name,vol){const a=AC;if(!a||!SND.master)return;if(SND.ambName===name)return;if(SND.amb){try{SND.amb.s.stop()}catch(e){}SND.amb=null}SND.ambName=name;if(!name||muted)return;const b=SND.buf[name];if(!b){SND.ambName='';return}
+ const s=a.createBufferSource();s.buffer=b;s.loop=true;const g=a.createGain();g.gain.value=vol;s.connect(g);g.connect(SND.master);s.start();SND.amb={s,g,vol}}
+const AMB={tokyo:['amb_crowd',.16],mountain:['amb_float',.22],jungle:['amb_forest',.28]};
+// per-character voice + foley identity
+const VOX={
+ 1:{rate:1,hurt:['meow1'],ko:'snarl',win:'meowpurr',cast:['wrope1'],spx:'slambarrel'},
+ 33:{rate:1.15,hurt:['meow3','meow6'],ko:'scream3',win:'meowpurr',cast:['shimmer'],spx:'spell'},
+ 34:{rate:1.22,hurt:['meow7','meow5'],ko:'scream3',win:'purr',cast:['unsheathe'],spx:'knife1',blade:1},
+ 5:{rate:.95,hurt:['meow2'],ko:'snarl',win:'meowpurr',cast:['swell'],spx:'rippler'},
+ 37:{rate:.85,hurt:['growl1'],ko:'growl3',win:'growl2',cast:['chaingate','fireball'],spx:'hammer',blade:1},
+ 30:{rate:.9,hurt:['meow4'],ko:'cheetah',win:'owl',cast:['batwings'],spx:'wsw3'},
+ 31:{rate:1.05,hurt:['meow5'],ko:'snarl',win:'meowpurr',cast:['gusts'],spx:'jstab'},
+ 38:{rate:.8,hurt:['undead'],ko:'agony',win:'whispers',cast:['chaingate'],spx:'pestab1'},
+ 39:{rate:.9,hurt:['orccough'],ko:'undead',win:'crow',cast:['crow'],spx:'breathe'},
+ 35:{rate:1,hurt:['scream2'],ko:'scream1',win:'gwhisper',cast:['appear'],spx:'jbowed',blade:1},
+ 50:{rate:.95,hurt:['growl2'],ko:'agony',win:'kidlaugh',cast:['kidlaugh'],spx:'knife2',blade:1},
+ 32:{rate:1.1,hurt:['meow6'],ko:'snarl',win:'whisp3',cast:['ninjajump'],spx:'wspin1',blade:1},
+ 36:{rate:.95,hurt:['wsnarl'],ko:'growl3',win:'sheath',cast:['sheath'],spx:'wspin2',blade:1},
+ 29:{rate:1,hurt:['meow2'],ko:'snarl',win:'thunder',cast:['lightcast'],spx:'thunder'},
+ 42:{rate:1.05,hurt:['sniff'],ko:'agony',win:'glitch',cast:['glitch'],spx:'gravity',blade:1},
+ 43:{rate:.9,hurt:['demented'],ko:'screamhit',win:'demented',cast:['fireball'],spx:'explosion'},
+ 44:{rate:1.1,hurt:['dwarflaugh'],ko:'scream4',win:'dwarflaugh',cast:['clown'],spx:'spit'},
+ 45:{rate:1,hurt:['meow4'],ko:'cheetah',win:'crowdchaos',cast:['crowdchaos'],spx:'quake'},
+ 46:{rate:1.2,hurt:['meow3'],ko:'scream3',win:'meowpurr',cast:['spell'],spx:'shimmer'},
+ 47:{rate:.85,hurt:['growl1'],ko:'growl3',win:'hammer',cast:['hammer'],spx:'impactsub'},
+ 48:{rate:.9,hurt:['whispers'],ko:'agony',win:'strangewind',cast:['strangewind'],spx:'rumble'},
+ 49:{rate:.95,hurt:['wsnarl'],ko:'snarl',win:'sheath',cast:['unsheathe'],spx:'knifefin',blade:1},
+ 51:{rate:.8,hurt:['breath'],ko:'growl3',win:'breathe',cast:['breath'],spx:'knife1',blade:1},
+ 52:{rate:1.15,hurt:['agony'],ko:'scream4',win:'sewer',cast:['sewer'],spx:'watersplash'}};
+const vox=f=>VOX[f.def.n]||{rate:1,hurt:['meow1'],ko:'snarl',win:'meowpurr',cast:['shimmer'],spx:'hitwave'};
+const vv=(f,k)=>{const n=f.def.n;return k+(1+((n*7+Math.floor(Math.random()*3))%({punch:6,hard:10,kick:5,slap:5,whs:8,wsw:12,weff:5,armor:5,mvh:7,land:7}[k]||1)))};
+function sndHit(att,def,heavy,blocked,move){const o={pan:panOf(def)},V=vox(att);
+ if(blocked){play(vv(def,'armor'),{...o,vol:.6});pv('block',2,{...o,vol:.7});return}
+ const r=V.rate*(att.def.pow>1.08?.9:att.def.pow<.98?1.08:1);
+ if(heavy){play(vv(att,move==='kick'?'kick':'hard'),{...o,vol:.95,rate:r});if(Math.random()<.5)pv('bone',19,{...o,vol:.5,rate:1.1});if(V.blade)pv('stab',5,{...o,vol:.55})}
+ else{play(vv(att,move==='kick'?'kick':'punch'),{...o,vol:.85,rate:r});if(Math.random()<.35)play(vv(att,'slap'),{...o,vol:.5,rate:r});if(V.blade&&Math.random()<.5)pv('stab',5,{...o,vol:.4})}
+ if(Math.random()<(heavy?.6:.3)){const D=vox(def);play(pick(D.hurt),{...o,vol:.5,rate:D.rate*(1.05+Math.random()*.1),delay:.04})}}
+function sndSwing(f,heavy){const V=vox(f);play(vv(f,V.blade?'wsw':heavy?'weff':'whs'),{pan:panOf(f),vol:heavy?.7:.55,rate:V.rate})}
+function sndCast(f){const V=vox(f);V.cast.forEach((c,i)=>play(c,{pan:panOf(f),vol:.8,rate:V.rate,delay:i*.12}))}
+function sndSpecialHit(att,def){const V=vox(att);play(V.spx,{pan:panOf(def),vol:.85,rate:V.rate});pv('hard',10,{pan:panOf(def),vol:.7})}
+function sndKO(loser){const V=vox(loser);play(V.ko,{vol:.9,rate:V.rate,force:true});play('bodydrop',{vol:.9,delay:.5,force:true})}
+function sndWin(w){const V=vox(w);play(V.win,{vol:.8,rate:V.rate,force:true})}
+const FINSFX={slam:'slambarrel',gild:'lava',freeze:'gusts',gore:'crowdchaos',sand:'windstorm',roots:'whispers',split:'unsheathe',hex:'meow3',toxic:'orccough',palm:'impactsub',zap:'thunder',burn:'fireball',bubble:'watersplash',crystal:'shimmer',vortex:'rumble',feathers:'batwings',spirit:'gwhisper',meteor:'explosion',beam:'swell',steam:'machinery',chains:'chaingate',claws:'kidlaugh',boxglove:'clown',bullets:'glitch',chop:'knifefin',crowbar:'hammer',slices:'unsheathe',lunarfall:'rumble',molten:'lava',impale:'pestab2',well:'sewer',smother:'breathe'};
+function sndGore(big){pv('squelch',14,{vol:.8});pv(big?'bone':'snap',big?19:4,{vol:.85,delay:.03});if(big){pv('goo',6,{vol:.7,delay:.08});pv('splash',4,{vol:.6,delay:.12})}}
 
 // ================= input =================
 const keys={},pressed={};
@@ -511,21 +565,21 @@ function damage(def,att,dmg,kb,o={}){
  if(def.st==='ko'||def.gone||roundOver)return false;
  const blocking=def.st==='block'&&Math.sign(att.x-def.x)===def.facing&&def.y>=GY-1;
  const hy=def.y-FH*(o.h||.55);
- if(blocking){def.hp=Math.max(0,def.hp-dmg*.12);def.vx=kb*.4*att.facing;SFX.block();spark(def.x+def.facing*70,hy,'#bfe6ff',12,.8);ring(def.x+def.facing*70,hy,'#bfe6ff');hitStop=.045;return 'block'}
+ if(blocking){def.hp=Math.max(0,def.hp-dmg*.12);def.vx=kb*.4*att.facing;sndHit(att,def,false,true);spark(def.x+def.facing*70,hy,'#bfe6ff',12,.8);ring(def.x+def.facing*70,hy,'#bfe6ff');hitStop=.045;return 'block'}
  def.hp=Math.max(0,def.hp-dmg);def.vx=kb*SC*att.facing;def.flash=.16;def.shake=.18;setSt(def,'hit');if(o.stun){def.stunT=o.stun;def.stunC=o.stunC||'#bfe6ff';def.vx*=.2}
  if(o.launch||def.y<GY-1){def.vy=-820;def.vx=kb*SC*.8*att.facing}
  if(att.comboT>0)att.combo++;else att.combo=1;att.comboT=.9;
  const heavy=o.heavy||dmg>=11;
  hitStop=o.tick?.02:heavy?.11:.065;if(heavy)erupt(def.x,GY,att);cam.shake=Math.min(.5,cam.shake+(heavy?.28:.15));cam.kick=heavy?1:.5;if(heavy)flashScreen=.12;
- heavy?SFX.heavy():SFX.hit();
+ if(o.tick){if(Math.random()<.5)pv('squelch',14,{pan:panOf(def),vol:.35})}else sndHit(att,def,heavy,false,att.st);
  spark(def.x-att.facing*20,hy,att.def.c,heavy?28:16);spark(def.x-att.facing*20,hy,'#fff',8);ring(def.x-att.facing*10,hy,att.def.c,heavy);
- if(att.st==='dash'&&!o.tick)specialImpact(def,att.def.c,true);
+ if(att.st==='dash'&&!o.tick)specialImpact(def,att.def.c,true,att);
  if(att.combo>=2)floaters.push({x:att.x,y:att.y-FH-40,s:`${att.combo} HIT COMBO`,t:0,c:'#FFE14D',small:true,anchor:att});
  return 'hit'}
 
 // ================= special-move FX layer (cast, trails, dynamic light, impacts) =================
 let lights=[],callouts=[];
-function castFX(f){const c=f.def.c,e=EL[f.def.n]||'ki',hx=f.x+f.facing*100*SC,hy=f.y-FH*.58;
+function castFX(f){sndCast(f);const c=f.def.c,e=EL[f.def.n]||'ki',hx=f.x+f.facing*100*SC,hy=f.y-FH*.58;
  cine.punch=Math.min(.3,cine.punch+.06);hitStop=Math.max(hitStop,.035);
  // floor sigil
  const x0=f.x;addFx(.9,(k,t)=>{const a=(k<.15?k/.15:1)*(1-Math.max(0,k-.55)/.45);ctx.save();ctx.translate(x0,GY+2);ctx.scale(1,.22);ctx.globalCompositeOperation='lighter';ctx.globalAlpha=a*.9;ctx.strokeStyle=c;ctx.shadowColor=c;ctx.shadowBlur=18;
@@ -539,7 +593,7 @@ function castFX(f){const c=f.def.c,e=EL[f.def.n]||'ki',hx=f.x+f.facing*100*SC,hy
  lightsPulse.push({x:hx,y:hy,c,t:0,life:.35,r:520*SC,a:.5});
  callouts.push({s:f.def.sp.name,c,t:0,f})}
 let lightsPulse=[];
-function specialImpact(o,c,big){const x=o.x,y=o.y-FH*.55;cine.punch=Math.min(.35,cine.punch+(big?.12:.06));hitStop=Math.max(hitStop,big?.13:.08);cam.shake=Math.min(.7,cam.shake+.3);
+function specialImpact(o,c,big,att){if(att)sndSpecialHit(att,o);const x=o.x,y=o.y-FH*.55;cine.punch=Math.min(.35,cine.punch+(big?.12:.06));hitStop=Math.max(hitStop,big?.13:.08);cam.shake=Math.min(.7,cam.shake+.3);
  ring(x,y,'#fff',true);ring(x,y,c,true);spark(x,y,c,34,1.4);spark(x,y,'#fff',14,1.1);erupt(x,GY,{def:{n:0,c}});
  const e=EL[(o===P1?P2:P1).def.n]||'ki';for(let i=0;i<26;i++){const an=Math.random()*TAU,v=(200+Math.random()*500);aura.push({e,x,y,vx:Math.cos(an)*v,vy:Math.sin(an)*v-120,t:0,life:.45+Math.random()*.3,s:(8+Math.random()*10)*SC,c,r:Math.random()*TAU})}
  addFx(.55,(k)=>{ctx.save();ctx.translate(x,GY+2);ctx.scale(1,.2);ctx.globalCompositeOperation='lighter';ctx.strokeStyle=hexA(c,(1-k)*.9);ctx.lineWidth=10*(1-k)+2;ctx.beginPath();ctx.arc(0,0,(60+k*420)*SC,0,TAU);ctx.stroke();ctx.restore()});
@@ -669,7 +723,7 @@ function updFighter(f,o,dt,c){
  const sp=275*SC*f.def.spd;
  if(f.st==='ko'||f.st==='win'||f.st==='dizzy'){f.vx*=.9}
  else if(f.st==='hit'){f.vx*=.88;if(f.t>.32&&f.y>=GY-1&&!(f.stunT>0))setSt(f,'idle')}
- else if(MOVES[f.st]){const m=MOVES[f.st];f.vx*=.7;if(!f.hitDone&&f.t>=m.hitAt){f.hitDone=true;m.heavy?SFX.heavyWhoosh():SFX.whoosh();const dx=(o.x-f.x)*f.facing,dy=Math.abs(o.y-f.y);if(dx>0&&dx<m.reach&&dy<160*SC)damage(o,f,m.dmg*f.def.pow,m.kb,m)}if(f.t>=m.dur)setSt(f,'idle')}
+ else if(MOVES[f.st]){const m=MOVES[f.st];f.vx*=.7;if(!f.hitDone&&f.t>=m.hitAt){f.hitDone=true;sndSwing(f,m.heavy);const dx=(o.x-f.x)*f.facing,dy=Math.abs(o.y-f.y);if(dx>0&&dx<m.reach&&dy<160*SC)damage(o,f,m.dmg*f.def.pow,m.kb,m)}if(f.t>=m.dur)setSt(f,'idle')}
  else if(f.st==='special'){f.vx=0;if(f.t>(f.spDur||.42))setSt(f,'idle')}
  else if(f.st==='dash'){dashUpd(f,o,dt)}
  else if(false){f.vx=820*SC*f.facing;if(!f.dashHit){const dx=(o.x-f.x)*f.facing;if(dx>0&&dx<210*SC&&Math.abs(o.y-f.y)<150*SC){f.dashHit=true;damage(o,f,13*f.def.pow,460,{heavy:true});f.vx=-140*f.facing;setSt(f,'idle')}}if(f.st==='dash'&&f.t>.38){f.vx=0;setSt(f,'idle')}}
@@ -680,7 +734,7 @@ function updFighter(f,o,dt,c){
   else if(c.kick&&!air){setSt(f,'kick')}
   else if(c.kick&&air){setSt(f,'kick')}
   else if(c.down&&!air){if(f.st!=='block')setSt(f,'block');f.vx=0}
-  else if(c.up&&!air){f.vy=-1180;setSt(f,'jump');f.spin=0;f.vx=(c.right?sp:c.left?-sp:0)*1.15}
+  else if(c.up&&!air){f.vy=-1180;setSt(f,'jump');play(vv(f,'mvh'),{pan:panOf(f),vol:.5});if(Math.random()<.5)play('ninjajump',{pan:panOf(f),vol:.3,rate:vox(f).rate});f.spin=0;f.vx=(c.right?sp:c.left?-sp:0)*1.15}
   else if(!air){const dir=(c.right?1:0)-(c.left?1:0);f.vx=dir*sp*(dir===f.facing?1:.8);const st=dir?'walk':'idle';if(f.st!==st)setSt(f,st)}
  }
  if(f.st==='jump'&&Math.abs(f.vx)>40)f.spin+=dt*TAU*1.35;
@@ -709,20 +763,20 @@ const SEL_COLS=7;
 function gridRect(i){const tw=122,th=124,gap=8,cols=SEL_COLS,row=Math.floor(i/cols),inRow=Math.min(cols,SLOTS.length-row*cols),x0=(W-(inRow*tw+(inRow-1)*gap))/2;return{x:x0+(i%cols)*(tw+gap),y:150+row*(th+gap),w:tw,h:th}}
 function enemyRect(i){const n=ENEMIES.length,tw=n>8?80:88,th=96,gap=7,x0=(W-(n*tw+(n-1)*gap))/2;return{x:x0+i*(tw+gap),y:470,w:tw,h:th}}
 function pickRandom(ex){const pool=ENEMIES.filter(f=>f!==ex&&!f.boss);const boss=ENEMIES.find(f=>f.boss);if(boss&&streak>0&&streak%4===0)return boss;return pool[Math.floor(Math.random()*pool.length)]}
-function go(s){if(s==='roll')startRoll();scene=s;sceneT=0}
+function go(s){if(s!=='fight')ambient('');if(s==='vs')play('thunderboom',{vol:.7});if(s==='result')play(lastResult&&lastResult.won?'hitwave':'subboom',{vol:.7});if(s==='roll')startRoll();scene=s;sceneT=0}
 function startMatch(){round=1;wins=[0,0];startRound()}
 function nextArena(){setArena(arenaIdx+1)}
 function startRound(){warmMaps(p1Def);warmMaps(p2Def);P1=mk(p1Def,WW/2-300*SC,1,false);P2=mk(p2Def,WW/2+300*SC,-1,true);projectiles=[];sparks=[];floaters=[];bolts=[];burst=[];aura=[];fxs=[];gore=[];splats=[];pops=[];skels=[];xr=null;lightsPulse=[];callouts=[];lights=[];timer=60;roundOver=false;finish=null;timeScale=1;slowT=0;cam.x=WW/2;cam.z=1.6;
- banner={s:`ROUND ${round}`,t:0,dur:1.3,next:{s:'FIGHT!',dur:.8,c:'#FA691D'}};SFX.bell();go('fight')}
+ banner={s:`ROUND ${round}`,t:0,dur:1.3,next:{s:'FIGHT!',dur:.8,c:'#FA691D'}};SFX.bell();play('rumble',{vol:.6});setTimeout(()=>play('hitwave',{vol:.9}),1300);go('fight');const am=AMB[A.id];if(am){SND.ambName='';ambient(am[0],am[1])}}
 function endRound(winner,how){if(roundOver)return;roundOver=true;const loser=winner===P1?P2:P1;
  wins[winner===P1?0:1]++;const matchOver=wins[0]===2||wins[1]===2;
  if(how==='ko'){SFX.ko();slowT=1.1;timeScale=.28;flashScreen=.25}
  const flawless=winner.hp>=100;
  if(matchOver&&how==='ko'){// finisher window
-  setSt(loser,'dizzy');loser.vx=0;loser.vy=0;loser.y=GY;setSt(winner,'idle');
+  setSt(loser,'dizzy');loser.vx=0;loser.vy=0;loser.y=GY;setSt(winner,'idle');sndKO(loser);setTimeout(()=>sndWin(winner),1300);
   banner={s:'K.O.',t:0,dur:1.2,c:'#FF3B2E',next:{s:'FINISH MEOW!',dur:6,c:'#FF3B2E',sub:winner===P1?'PRESS SPECIAL (L)':''},after:()=>finishMatch(winner,flawless,false)};
-  finish={winner,loser,armed:true,cpuAt:winner===P2?2.4:99,t:0};return}
- if(how==='ko')setSt(loser,'ko');setSt(winner,'win');
+  finish={winner,loser,armed:true,cpuAt:winner===P2?2.4:99,t:0};setTimeout(()=>play('jbowed',{vol:.6,force:true}),1200);return}
+ if(how==='ko')setSt(loser,'ko');setSt(winner,'win');sndKO(loser);setTimeout(()=>sndWin(winner),900);
  banner={s:how==='time'?'TIME!':'K.O.',t:0,dur:1.3,c:'#FF3B2E',next:{s:flawless?'FLAWLESS MEOWTORY':`${winner.def.name} WINS`,dur:1.8,c:winner.def.c},after:()=>{if(matchOver)finishMatch(winner,flawless,true);else{round++;startRound()}}}}
 function finishMatch(winner,flawless,already){const won=winner===P1;if(won){defeated.add(p2Def.n);streak++;level++;if(streak>best){best=streak;store.set('best',best)}}else{level=Math.max(0,level-1)}
  lastResult={won,me:p1Def,them:p2Def,streak:won?streak:0};if(!won)streak=0;go('result')}
@@ -775,15 +829,15 @@ const BLOOD=['#5e000c','#7a0010','#8e0614','#a40a1a','#43000a'];
 function bleed(x,y,n,o={}){for(let i=0;i<n;i++){const a=(o.dir!=null?o.dir+(Math.random()-.5)*(o.cone??1.2):Math.random()*TAU),v=(o.v??520)*(.3+Math.random());
  gore.push({x:x+(Math.random()-.5)*(o.w||20),y:y+(Math.random()-.5)*(o.h||20),vx:Math.cos(a)*v,vy:Math.sin(a)*v-(o.up??260),t:0,s:(2+Math.random()*5)*SC*(o.size||1),c:pick(BLOOD)})}}
 function splat(x,s){splats.push({x,s:s*SC*(.6+Math.random()*.8),a:0,c:pick(BLOOD),r:Math.random()*TAU,drops:[...Array(6)].map(()=>[(Math.random()-.5)*2.6,Math.random()*.4+.1])})}
-function impact(p=1){if(finish&&finish.loser){const L=finish.loser,X=L.fx||{ox:0,oy:0};lightsPulse.push({x:L.x+X.ox,y:L.y+X.oy-FH*.5,c:'#ffd8b8',t:0,life:.25,r:600*SC,a:.35});for(let i=0;i<14;i++){const an=Math.random()*TAU,v=150+Math.random()*350;aura.push({e:'smoke',x:L.x+X.ox,y:L.y+X.oy-FH*.5,vx:Math.cos(an)*v,vy:Math.sin(an)*v-60,t:0,life:.6,s:(8+Math.random()*10)*SC,c:'#4a4038'})}}cine.punch=Math.min(.55,cine.punch+.22*p);cine.red=Math.min(.3,cine.red+.15*p);timeScale=.28;slowT=Math.max(slowT,.32*p+.1);SFX.thud&&SFX.thud()}
-function cineUpd(dt){const run=finish&&finish.run!=null,arm=finish&&finish.armed;
+function impact(p=1){sndGore(p>1.1);if(finish&&finish.loser){const L=finish.loser,X=L.fx||{ox:0,oy:0};lightsPulse.push({x:L.x+X.ox,y:L.y+X.oy-FH*.5,c:'#ffd8b8',t:0,life:.25,r:600*SC,a:.35});for(let i=0;i<14;i++){const an=Math.random()*TAU,v=150+Math.random()*350;aura.push({e:'smoke',x:L.x+X.ox,y:L.y+X.oy-FH*.5,vx:Math.cos(an)*v,vy:Math.sin(an)*v-60,t:0,life:.6,s:(8+Math.random()*10)*SC,c:'#4a4038'})}}cine.punch=Math.min(.55,cine.punch+.22*p);cine.red=Math.min(.3,cine.red+.15*p);timeScale=.28;slowT=Math.max(slowT,.32*p+.1);SFX.thud&&SFX.thud()}
+function cineUpd(dt){if(SND.amb)SND.amb.g.gain.value=SND.amb.vol*(1-.75*cine.k);const run=finish&&finish.run!=null,arm=finish&&finish.armed;
  const T=run?{dim:.58,bars:1,vig:.85,z:1.5,k:1}:arm?{dim:.4,bars:.55,vig:.65,z:1.4,k:.6}:{dim:0,bars:0,vig:0,z:1,k:0};
  const e=1-Math.pow(.004,dt);for(const k of ['dim','bars','vig','k'])cine[k]+=(T[k]-cine[k])*e;cine.z+=(T.z-cine.z)*(1-Math.pow(.05,dt));
  cine.punch*=Math.pow(.08,dt);cine.red*=Math.pow(.05,dt);cine.lines*=Math.pow(.01,dt);
  if(run||arm){cine.beat-=dt;if(cine.beat<=0){cine.beat=run?.55:.85;heart()}}
  const gdt=dt*timeScale;for(const g of gore){g.t+=gdt;g.vy+=1900*gdt;g.x+=g.vx*gdt;g.y+=g.vy*gdt;if(g.y>=GY+2&&!g.dead){g.dead=true;if(Math.random()<.18)splat(g.x,g.s*3.5)}}gore=gore.filter(g=>!g.dead&&g.t<3);
  for(const s of splats)s.a=Math.min(1,s.a+dt*6)}
-function heart(){const a=ac();if(!a||muted)return;tone(70,42,.16,'sine',.35);setTimeout(()=>tone(62,38,.2,'sine',.28),170)}
+function heart(){const a=ac();if(!a||muted)return;if(!play('heart1',{vol:.9,force:true})){tone(70,42,.16,'sine',.35);setTimeout(()=>tone(62,38,.2,'sine',.28),170)}}
 function drawDim(){if(cine.dim<.01)return;camReset();ctx.save();ctx.globalCompositeOperation='saturation';ctx.fillStyle=`rgba(128,128,128,${Math.min(.75,cine.dim*1.1)})`;ctx.fillRect(0,0,W,H);ctx.restore();ctx.fillStyle=`rgba(6,4,4,${cine.dim})`;ctx.fillRect(0,0,W,H);camApply(1);
  if(finish){const L=finish.loser,Wn=finish.winner,cx=(L.x*.6+Wn.x*.4);ctx.save();ctx.translate(cx,GY+6);ctx.scale(1,.2);const g=ctx.createRadialGradient(0,0,0,0,0,620*SC);g.addColorStop(0,`rgba(255,236,200,${.32*cine.k})`);g.addColorStop(.5,`rgba(255,180,120,${.12*cine.k})`);g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,620*SC,0,TAU);ctx.fill();ctx.restore();
   // shaft of light from above
@@ -833,7 +887,7 @@ function mkSkel(L,X){const x=L.x+(X?X.ox:0),f=L.facing,u=FH,B=[];const R=Math.ra
  return{x,u,f,t:0,parts:B.map(b=>{const cx=b.k!=='b'?b.x1:(b.x1+b.x2)/2,cy=b.k!=='b'?b.y1:(b.y1+b.y2)/2;return{...b,cx,cy,px:0,py:0,a:0,vx:0,vy:0,va:0,rest:false,char:R()}})}}
 function updSkels(dt){for(const S of skels){S.t+=dt;
   if(S.t<1&&Math.random()<dt*30)aura.push({e:'smoke',x:S.x+(Math.random()-.5)*120*SC,y:GY-Math.random()*FH*.8,vx:(Math.random()-.5)*20,vy:-40-Math.random()*50,t:0,life:1.2,s:(14+Math.random()*16)*SC,c:'#3a3632'});
-  if(S.t>.95&&!S.fell){S.fell=true;SFX.land();for(const q of S.parts){q.vx=(Math.random()-.5)*120+q.cx*S.u*.5;q.vy=-Math.random()*90;q.va=(Math.random()-.5)*5}}
+  if(S.t>.95&&!S.fell){S.fell=true;pv('creak',6,{vol:.8,force:true});pv('snap',4,{vol:.6,delay:.15});play('bodydrop',{vol:.5,delay:.2});for(const q of S.parts){q.vx=(Math.random()-.5)*120+q.cx*S.u*.5;q.vy=-Math.random()*90;q.va=(Math.random()-.5)*5}}
   if(S.fell)for(const q of S.parts){if(q.rest)continue;q.vy+=2400*dt;q.px+=q.vx*dt;q.py+=q.vy*dt;q.a+=q.va*dt;const absY=GY+q.cy*S.u+q.py;if(absY>GY-5){q.py=GY-5-GY-q.cy*S.u;q.vy*=-.12;q.vx*=.4;q.va*=.3;if(Math.abs(q.vy)<40){q.rest=true;const cx=S.x+q.cx*S.u+q.px;for(let i=0;i<4;i++)aura.push({e:'smoke',x:cx+(Math.random()-.5)*30,y:GY-6,vx:(Math.random()-.5)*80,vy:-30-Math.random()*40,t:0,life:.9,s:10*SC,c:'#4a443e'})}}}
   if(S.fell&&S.t>2.2)S.ash=Math.min(1,(S.t-2.2)/1.5)}}
 function boneFill(len,w,char){const g=ctx.createLinearGradient(0,-w/2,0,w/2);const c1=char>.5?'#b8a888':'#cfc2a6',c2=char>.5?'#3a2c20':'#6a5a46';g.addColorStop(0,c1);g.addColorStop(.6,c2);g.addColorStop(1,'#1e150e');return g}
@@ -882,10 +936,11 @@ function shatter(L,col,o={}){const X=lfx(L),px=pixelsOf(L.def.n),w=bodyW(L);for(
   burst.push({x:L.x+X.ox+(p.u-.5)*w*X.sx*L.facing,y:L.y+X.oy-FH*X.sy+p.v*FH*X.sy,vx:(Math.random()-.5)*(o.spread??900)+(p.u-.5)*400,vy:-Math.random()*(o.up??900),c:col?col(p.c):p.c,t:0,s:(4+Math.random()*4)*SC*(o.size||1),g:o.g??1400})}
  const gl=GORE[finish&&finish.kind]??.6;if(gl>0){const cy=L.y+X.oy-FH*.5*X.sy;bleed(L.x+X.ox,cy,Math.round(180*gl),{v:900,up:500,w:120,h:FH*.6,size:1.2});for(let i=0;i<Math.round(9*gl);i++)splat(L.x+X.ox+(Math.random()-.5)*360*SC,30+Math.random()*40);for(const b of burst)if(!b.gib&&Math.random()<gl*.12)b.gib=true}
  if(finish&&SKELK.has(finish.kind)&&!finish.skel){finish.skel=1;skels.push(mkSkel(L,X))}
- L.gone=true;SFX.ko();cam.shake=Math.max(cam.shake,.9);flashScreen=Math.max(flashScreen,.3);impact(1.5)}
+ sndGore(true);{const V=vox(L);play(V.ko,{vol:.8,rate:V.rate*1.1,force:true})}play('subboom',{vol:.7,force:true});
+ L.gone=true;cam.shake=Math.max(cam.shake,.9);flashScreen=Math.max(flashScreen,.3);impact(1.5)}
 function lc(L){const X=lfx(L);return{x:L.x+X.ox,y:L.y+X.oy-FH*.5*X.sy}}
 function triggerCatality(){if(!finish||!finish.armed)return;finish.armed=false;finish.run=0;finish.pre=0;finish.done={};const {winner,loser}=finish;
- const F=FINS[winner.def.n]||['CATALITY','zap'];{const dd=Math.sign(loser.x-winner.x)||1;winner.x=clamp(loser.x-dd*Math.min(Math.abs(loser.x-winner.x),330*SC),LEFT,RIGHT);winner.facing=dd}finish.kind=F[1];finish.name=F[0];finish.w0=winner.x;setSt(winner,'idle');SFX.special();lfx(loser);{const sp=winner.def.sp.name;winner.def.sp.name='';castFX(winner);winner.def.sp.name=sp;callouts=[]}
+ const F=FINS[winner.def.n]||['CATALITY','zap'];{const dd=Math.sign(loser.x-winner.x)||1;winner.x=clamp(loser.x-dd*Math.min(Math.abs(loser.x-winner.x),330*SC),LEFT,RIGHT);winner.facing=dd}finish.kind=F[1];finish.name=F[0];play(FINSFX[F[1]]||'swell',{vol:.85,force:true,delay:.2});play('whispers',{vol:.45,force:true});play('swell',{vol:.5,force:true});finish.w0=winner.x;setSt(winner,'idle');SFX.special();lfx(loser);{const sp=winner.def.sp.name;winner.def.sp.name='';castFX(winner);winner.def.sp.name=sp;callouts=[]}
  banner={s:'',t:0,dur:9999};finish.endAt=(FIN_DUR[F[1]]||2.6)+.3+(SKELK.has(F[1])?.9:0);finish.endBanner=()=>{banner={s:F[0],t:0,dur:1.5,c:winner.def.c,next:{s:'CATALITY',dur:1.8,c:winner.def.c},after:()=>finishMatch(winner,false,true)}}}
 function runCatality(dt){for(const P of pops)P.t+=dt;pops=pops.filter(P=>P.t<.75);if(xr)xr.t+=dt;updSkels(dt);if(finish&&finish.run!=null&&finish.pre!=null&&finish.pre<50){prelude(dt);return}const s0=cam.shake;runCatality0(dt);if(finish&&finish.run!=null&&finish.endBanner&&finish.run>finish.endAt){const eb=finish.endBanner;finish.endBanner=null;eb()}if(finish&&finish.run!=null&&cam.shake>s0+.15)impact(Math.min(1.4,cam.shake))}
 function runCatality0(dt){const F=finish;if(!F||F.run==null)return;F.run+=dt;const r=F.run,Wn=F.winner,L=F.loser,X=lfx(L),c=Wn.def.c,d=Math.sign(L.x-Wn.x)||1;
@@ -1030,7 +1085,7 @@ function update(rdt){sceneT+=rdt;
   for(const p of projectiles){p.t+=dt;const o=p.owner===P1?P2:P1;if(p.upd)p.upd(p,dt,o);else{p.x+=p.vx*dt;p.y+=(p.vy||0)*dt}
    const mv=Math.abs(p.vx||0)+Math.abs(p.vy||0);if(mv>60&&p.trail!==false&&!(p.wait&&p.t<p.wait)){(p.hist||(p.hist=[])).push([p.x,p.y]);if(p.hist.length>9)p.hist.shift();if(Math.random()<.7){const e=EL[p.owner.def.n]||'ki';aura.push({e,x:p.x+(Math.random()-.5)*20,y:p.y+(Math.random()-.5)*20,vx:-(p.vx||0)*.15+(Math.random()-.5)*60,vy:-(p.vy||0)*.15-30,t:0,life:.35,s:(6+Math.random()*8)*SC,c:p.c,r:Math.random()*TAU})}}else if(p.hist&&p.hist.length)p.hist.shift();p.cd=Math.max(0,(p.cd||0)-dt);
    const act=p.t>=(p.from||0)&&(p.until==null||p.t<=p.until);const hit=p.test?p.test(p,o):Math.abs(p.x-o.x)<(p.r||95*SC)&&p.y>o.y-FH-30&&p.y<o.y+30;
-   if(!p.dead&&act&&p.cd<=0&&hit&&o.st!=='ko'){const res=damage(o,p.owner,p.dmg,p.kb??320,{heavy:p.heavy,stun:p.stun,stunC:p.stunC,launch:p.launch,tick:p.tick});if(res==='hit'&&!p.tick)specialImpact(o,p.c,p.dmg>=11);if(res==='hit'&&p.onHit)p.onHit(p,o);p.n=(p.n||0)+1;if(p.n>=(p.hits||1)){if(p.pierce||p.until!=null||p.tick)p.cd=99;else p.dead=true}else p.cd=p.every||.3}
+   if(!p.dead&&act&&p.cd<=0&&hit&&o.st!=='ko'){const res=damage(o,p.owner,p.dmg,p.kb??320,{heavy:p.heavy,stun:p.stun,stunC:p.stunC,launch:p.launch,tick:p.tick});if(res==='hit'&&!p.tick)specialImpact(o,p.c,p.dmg>=11,p.owner);if(res==='hit'&&p.onHit)p.onHit(p,o);p.n=(p.n||0)+1;if(p.n>=(p.hits||1)){if(p.pierce||p.until!=null||p.tick)p.cd=99;else p.dead=true}else p.cd=p.every||.3}
    if(p.life&&p.t>p.life)p.dead=true;if(p.x<-400||p.x>WW+400)p.dead=true}
   for(let i=0;i<projectiles.length;i++)for(let j=i+1;j<projectiles.length;j++){const a=projectiles[i],b=projectiles[j];if(a.owner!==b.owner&&a.clash&&b.clash&&Math.abs(a.x-b.x)<60&&Math.abs(a.y-b.y)<80){a.dead=b.dead=true;spark((a.x+b.x)/2,a.y,'#fff',24);ring((a.x+b.x)/2,a.y,'#fff',true);SFX.block()}}
   projectiles=projectiles.filter(p=>!p.dead);
@@ -1161,5 +1216,5 @@ function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const t=now/
  camReset();if(!['result','select','title','vs'].includes(scene))click=null;
  requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
-window.__mk={get P1(){return P1},get scene(){return scene},get finish(){return finish},spdemo(n,dist){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;P1.x=WW/2-dist/2;P2.x=WW/2+dist/2;P1.spCd=0;__mk.noAI=true;setTimeout(()=>{P1.spCd=0;doSpecial(P1)},300)},get P2(){return P2},setDef(a){defeated=new Set(a)},goRoll(){go('roll')},dbg(){return [hitStop,timeScale,slowT,scene,roundOver]},IMG,lightMaps,demo(n){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;wins=[1,0];P2.hp=0;endRound(P1,'ko');slowT=0;timeScale=1;triggerCatality()}};
+window.__mk={get P1(){return P1},get scene(){return scene},get finish(){return finish},spdemo(n,dist){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;P1.x=WW/2-dist/2;P2.x=WW/2+dist/2;P1.spCd=0;__mk.noAI=true;setTimeout(()=>{P1.spCd=0;doSpecial(P1)},300)},get P2(){return P2},setDef(a){defeated=new Set(a)},snd(){return [Object.keys(SND.buf).length,SND.active,!!AC&&AC.state]},goRoll(){go('roll')},dbg(){return [hitStop,timeScale,slowT,scene,roundOver]},IMG,lightMaps,demo(n){p1Def=PLAYABLE.find(d=>d.n===n);p2Def=pickRandom(p1Def);warmMaps(p2Def);startRound();banner=null;wins=[1,0];P2.hp=0;endRound(P1,'ko');slowT=0;timeScale=1;triggerCatality()}};
 })();
