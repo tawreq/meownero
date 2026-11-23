@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='16';
+const V='17';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -58,11 +58,12 @@ const R=[
  {n:46,name:'STARLIGHT',c:'#FF6FB0',sp:{t:'p',name:'MOON TIARA'},spd:1.08,pow:.97},
  {n:47,name:'GOLDEN PALADIN',c:'#E6C04A',sp:{t:'p',name:'HOLY PILLAR'},spd:.94,pow:1.12},
  {n:48,name:'SMOKE SPECTER',c:'#B8BCC8',sp:{t:'p',name:'SMOKE SNARE'},spd:1.04,pow:1},
+ {n:49,name:'RONIN',c:'#9A2A3A',sp:{t:'p',name:'SHURIKEN STORM'},spd:1.06,pow:1.04},
  {n:28,name:'GEARHEAD',c:'#3FE3E0',sp:{t:'p',name:'STEAM CANNON',fx:'orb'},spd:.96,pow:1.08},
 ];
 // Core players (selectable) and the enemy roster (CPU opponents)
-const PLAYER_IDS=[1,2,3,4,5,6,7,29,30,31,32];
-const ENEMY_IDS=[41,42,43,44,45,46,47,48,40];
+const PLAYER_IDS=[1,2,3,4,5,6,29,30,31,32];
+const ENEMY_IDS=[42,43,44,45,46,47,48,49];
 const TEST=true;
 const byN=n=>R.find(d=>d&&d.n===n);
 const SLOTS=PLAYER_IDS.map(byN),ENEMIES=ENEMY_IDS.map(byN);
@@ -460,7 +461,7 @@ function drawFighter(f,t,refl=false){
 
 // ================= elements =================
 function hexA(h,a){const n=parseInt(h.slice(1),16);return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`}
-const EL={};for(const [e,ns] of Object.entries({fire:[2,14,18,26,40,43],bolt:[8,13,27,29],frost:[3,23,31],toxic:[10,21,44],arcane:[5,9,17,20,25,32,46,48],nature:[6,16,24,30],water:[15],ki:[1,4,7,11,12,19,22,28,41,42,45,47]}))for(const n of ns)EL[n]=e;
+const EL={};for(const [e,ns] of Object.entries({fire:[2,14,18,26,40,43],bolt:[8,13,27,29],frost:[3,23,31],toxic:[10,21,44],arcane:[5,9,17,20,25,32,46,48],nature:[6,16,24,30],water:[15],ki:[1,4,7,11,12,19,22,28,41,42,45,47,49]}))for(const n of ns)EL[n]=e;
 let aura=[];
 function emitAura(f,dt){if(f.gone||f.st==='ko'||f.fx)return;const w=bodyW(f),h=FH,e=EL[f.def.n]||'ki';const hot=f.st==='special'||f.st==='dash'||f.st==='win'||f.st==='upper';let rate=(hot?70:16)*dt;
  while(rate>0){if(Math.random()<rate){const side=Math.random()<.5?-1:1;const x=f.x+side*w*(.18+Math.random()*.24),y=f.y-h*(.05+Math.random()*.85);
@@ -510,7 +511,7 @@ function damage(def,att,dmg,kb,o={}){
  return 'hit'}
 
 // ================= unique special moves (L) =================
-const SPX={1:['FLYING MEOWSAULT','d','leap'],2:['GOLD RUSH','p','coins'],3:['ICE PATH','p','icepath'],4:['BULL RUSH','d','rush'],5:['CURSE OF RA','p','sunpillar'],6:['THORN SNARE','p','roots'],8:['EYE LASER','p','laser'],9:['HEX BOLT','p','homing'],10:['GAS BOMB','p','gasbomb'],11:['GOLDEN PALM','p','palm',1],12:['BLOOD RUSH','d','teleslash'],29:['SKY JUDGEMENT','p','lightning'],30:['EAGLE STORM','p','feathers'],31:['FROST PATH','p','icepath'],32:['SHADOW STEP','d','phase'],40:['WARHAMMER QUAKE','d','quake'],41:['SUN PALM','p','palm',1],42:['BLADE RUSH','d','teleslash'],43:['HELLFIRE HEAD','p','skull'],44:['LAUGHING GAS','p','gasbomb'],45:['DIVING SPLASH','d','leap'],46:['MOON TIARA','p','crescent'],47:['HOLY PILLAR','p','sunpillar'],48:['SMOKE SNARE','p','cloud'],7:['BERSERKER FURY','d','flurry'],13:['THUNDER CLAP','p','lightning'],14:['HELL SKULL','p','skull'],15:['TIDAL WAVE','p','wave'],16:['PRAYING STRIKE','d','flurry'],17:['RAINBOW SPREAD','p','spread'],18:['DRAGON BREATH','p','flame'],19:['SANDSTORM','d','tornado'],20:['BLACK SUN','p','blackhole'],21:['MIASMA','p','cloud'],22:['IRON QUAKE','d','quake'],23:['WINTER AXE','p','axe'],24:['FEATHER STORM','p','feathers'],25:['PHANTOM STEP','d','phase'],26:['LAVA BALL','p','lava'],27:['CRESCENT MOON','p','crescent'],28:['STEAM CANNON','p','cannon']};
+const SPX={1:['FLYING MEOWSAULT','d','leap'],2:['GOLD RUSH','p','coins'],3:['ICE PATH','p','icepath'],4:['BULL RUSH','d','rush'],5:['CURSE OF RA','p','sunpillar'],6:['THORN SNARE','p','roots'],8:['EYE LASER','p','laser'],9:['HEX BOLT','p','homing'],10:['GAS BOMB','p','gasbomb'],11:['GOLDEN PALM','p','palm',1],12:['BLOOD RUSH','d','teleslash'],29:['SKY JUDGEMENT','p','lightning'],30:['EAGLE STORM','p','feathers'],31:['FROST PATH','p','icepath'],32:['SHADOW STEP','d','phase'],40:['WARHAMMER QUAKE','d','quake'],41:['SUN PALM','p','palm',1],42:['BLADE RUSH','d','teleslash'],43:['HELLFIRE HEAD','p','skull'],44:['LAUGHING GAS','p','gasbomb'],45:['DIVING SPLASH','d','leap'],46:['MOON TIARA','p','crescent'],47:['HOLY PILLAR','p','sunpillar'],48:['SMOKE SNARE','p','cloud'],49:['SHURIKEN STORM','p','spread'],7:['BERSERKER FURY','d','flurry'],13:['THUNDER CLAP','p','lightning'],14:['HELL SKULL','p','skull'],15:['TIDAL WAVE','p','wave'],16:['PRAYING STRIKE','d','flurry'],17:['RAINBOW SPREAD','p','spread'],18:['DRAGON BREATH','p','flame'],19:['SANDSTORM','d','tornado'],20:['BLACK SUN','p','blackhole'],21:['MIASMA','p','cloud'],22:['IRON QUAKE','d','quake'],23:['WINTER AXE','p','axe'],24:['FEATHER STORM','p','feathers'],25:['PHANTOM STEP','d','phase'],26:['LAVA BALL','p','lava'],27:['CRESCENT MOON','p','crescent'],28:['STEAM CANNON','p','cannon']};
 for(const d of R)if(d&&SPX[d.n])d.sp={...d.sp,name:SPX[d.n][0],t:SPX[d.n][1],k:SPX[d.n][2],close:!!SPX[d.n][3]};
 const BODYY=o=>o.y-FH*.55;
 function ent(f,o){return Object.assign({owner:f,c:f.def.c,t:0,x:f.x+f.facing*110*SC,y:f.y-FH*.56,vx:0,vy:0,dmg:12*f.def.pow,kb:320,r:95*SC,hits:1,every:.3,life:4,heavy:true},o)}
@@ -703,7 +704,7 @@ function drawCineOverlay(t){camReset();
  if(cine.k>.05){ctx.save();ctx.globalAlpha=.06*cine.k;for(let i=0;i<220;i++){ctx.fillStyle=Math.random()<.5?'#fff':'#000';ctx.fillRect(Math.random()*W,Math.random()*H,2,2)}ctx.restore()}}
 
 // ================= unique finishers (CATALITY) =================
-const FINS={7:['CLAW CROSS','split'],29:['THUNDER GOD','zap'],30:['SPIRIT EAGLE','feathers'],31:['ABSOLUTE ZERO','freeze'],32:['NIGHT HARVEST','spirit'],40:['CONQUEST','slam'],41:['NIRVANA','palm'],42:['TERMINATED','split'],43:['HEADLESS','burn'],44:['PUNCHLINE','toxic'],45:['TOP ROPE','slam'],46:['MOON PRISM','beam'],47:['JUDGEMENT DAY','gild'],48:['VANISHED','vortex'],1:['LUCHA PILEDRIVER','slam'],2:['MIDAS TOUCH','gild'],3:['DEEP FREEZE','freeze'],4:['STAMPEDE','gore'],5:['CURSE OF THE TOMB','sand'],6:['RETURN TO ROOTS','roots'],8:['LASER GRID','split'],9:['KITTEN CURSE','hex'],10:['MELTDOWN','toxic'],11:['THOUSAND PALMS','palm'],12:['CRIMSON CUT','split'],13:['SKY JUDGEMENT','zap'],14:["HELL'S GATE",'burn'],15:['DROWNED','bubble'],16:['MANTIS SCISSORS','split'],17:['PRISM BREAK','crystal'],18:["DRAGON'S BREATH",'burn'],19:['DUST TO DUST','sand'],20:['EVENT HORIZON','vortex'],21:['PLAGUE ROT','toxic'],22:['BATTERING RAM','gore'],23:["GLACIER'S WRATH",'freeze'],24:['SKY OFFERING','feathers'],25:['SOUL HARVEST','spirit'],26:['ERUPTION','meteor'],27:['LUNAR ASCENSION','beam'],28:['OVERCLOCKED','steam']};
+const FINS={7:['CLAW CROSS','split'],29:['THUNDER GOD','zap'],30:['SPIRIT EAGLE','feathers'],31:['ABSOLUTE ZERO','freeze'],32:['NIGHT HARVEST','spirit'],40:['CONQUEST','slam'],41:['NIRVANA','palm'],42:['TERMINATED','split'],43:['HEADLESS','burn'],44:['PUNCHLINE','toxic'],45:['TOP ROPE','slam'],46:['MOON PRISM','beam'],47:['JUDGEMENT DAY','gild'],48:['VANISHED','vortex'],49:['THOUSAND CUTS','split'],1:['LUCHA PILEDRIVER','slam'],2:['MIDAS TOUCH','gild'],3:['DEEP FREEZE','freeze'],4:['STAMPEDE','gore'],5:['CURSE OF THE TOMB','sand'],6:['RETURN TO ROOTS','roots'],8:['LASER GRID','split'],9:['KITTEN CURSE','hex'],10:['MELTDOWN','toxic'],11:['THOUSAND PALMS','palm'],12:['CRIMSON CUT','split'],13:['SKY JUDGEMENT','zap'],14:["HELL'S GATE",'burn'],15:['DROWNED','bubble'],16:['MANTIS SCISSORS','split'],17:['PRISM BREAK','crystal'],18:["DRAGON'S BREATH",'burn'],19:['DUST TO DUST','sand'],20:['EVENT HORIZON','vortex'],21:['PLAGUE ROT','toxic'],22:['BATTERING RAM','gore'],23:["GLACIER'S WRATH",'freeze'],24:['SKY OFFERING','feathers'],25:['SOUL HARVEST','spirit'],26:['ERUPTION','meteor'],27:['LUNAR ASCENSION','beam'],28:['OVERCLOCKED','steam']};
 const FIN_DUR={slam:2.6,gild:2.6,freeze:2.6,gore:2.4,sand:3,roots:2.8,split:2.9,hex:2.6,toxic:2.8,palm:2.4,zap:2.4,burn:2.8,bubble:2.8,crystal:2.6,vortex:2.6,feathers:2.8,spirit:2.8,meteor:2.8,beam:2.8,steam:2.6};
 let fxs=[];const addFx=(life,fn)=>fxs.push({t:0,life,fn});
 function lfx(L){return L.fx||(L.fx={tint:'#000',tintA:0,sx:1,sy:1,ox:0,oy:0,rot:0,alpha:1,clip:false,split:0})}
@@ -836,7 +837,7 @@ function drawSelect(t,dt){cam.x=WW/2;cam.z=1;drawArena(t);drawAtmos(t,dt);camRes
   for(let i=0;i<ENEMIES.length;i++){const r=enemyRect(i),e=ENEMIES[i];ctx.fillStyle=e.boss?'#5a1a10':'#2a0c0c';ctx.fillRect(r.x-3,r.y-3,r.w+6,r.h+6);drawPortrait(e.n,r.x,r.y,r.w,r.h);
    const g=ctx.createLinearGradient(0,r.y,0,r.y+r.h);g.addColorStop(0,'rgba(120,0,0,.08)');g.addColorStop(1,'rgba(90,0,0,.55)');ctx.fillStyle=g;ctx.fillRect(r.x,r.y,r.w,r.h);
    txt(e.boss?'BOSS':e.name.replace(/^THE /,''),r.x+r.w/2,r.y+r.h-6,e.name.length>11?11:13,e.boss?'#FFB13B':'#fff',{stroke:'#000',sw:3})}
-  txt('WIN 4 IN A ROW TO FACE THE WARLORD',W/2,592,16,'#cfcbd8',{family:MONO})}
+  txt('THE CPU PICKS YOUR OPPONENT FROM THIS ROSTER',W/2,592,16,'#cfcbd8',{family:MONO})}
  const r=gridRect(cursor);ctx.save();ctx.strokeStyle='#38E04A';ctx.lineWidth=6;ctx.shadowColor='#38E04A';ctx.shadowBlur=14+Math.sin(t*8)*6;ctx.strokeRect(r.x-4,r.y-4,r.w+8,r.h+8);ctx.restore();txt('1',r.x+16,r.y+34,34,'#fff',{stroke:'#000',sw:6});
  const f=SLOTS[cursor];
  ctx.fillStyle='#38E04A';ctx.fillRect(15,H-62,150,40);txt('P1',90,H-31,30,'#000');if(f)bigFighter(f,90,642+Math.sin(t*3)*2,250,false,f.c+'88');
