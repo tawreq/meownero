@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='12';
+const V='13';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
