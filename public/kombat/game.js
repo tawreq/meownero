@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='33';
+const V='34';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -160,7 +160,7 @@ const SNDLIST=["agony", "amb_crowd", "amb_float", "amb_forest", "appear", "armor
 const SND={buf:{},started:false,active:0,master:null,amb:null,ambName:''};
 function sndInit(){const a=AC;if(!a||SND.started)return;SND.started=true;SND.master=a.createGain();SND.master.gain.value=.9;const comp=a.createDynamicsCompressor();comp.threshold.value=-14;comp.ratio.value=4;SND.master.connect(comp);comp.connect(a.destination);
  let i=0;const next=()=>{if(i>=SNDLIST.length)return;const n=SNDLIST[i++];fetch('/kombat/sfx/'+n+'.mp3?v='+V).then(r=>r.arrayBuffer()).then(ab=>new Promise((res,rej)=>a.decodeAudioData(ab,res,rej))).then(b=>{SND.buf[n]=b}).catch(()=>{}).finally(next)};for(let k=0;k<6;k++)next()}
-function play(n,o={}){const a=ac();if(!a||muted||!SND.master)return false;const b=SND.buf[n];if(!b)return false;if(SND.active>28&&!o.force)return true;
+function play(n,o={}){const a=ac();if(!a||muted||!SND.master)return false;const b=SND.buf[n];if(window.__sndlog)window.__sndlog.push(n+(b?'':'(missing)'));if(!b)return false;if(SND.active>28&&!o.force)return true;
  const s=a.createBufferSource();s.buffer=b;s.playbackRate.value=(o.rate||1)*(1+(Math.random()-.5)*(o.jit??.08));const g=a.createGain();g.gain.value=o.vol??.8;s.connect(g);let out=g;
  if(o.pan!=null&&a.createStereoPanner){const p=a.createStereoPanner();p.pan.value=clamp(o.pan,-1,1);g.connect(p);out=p}out.connect(SND.master);SND.active++;s.onended=()=>{SND.active--};s.start(a.currentTime+(o.delay||0));return true}
 const pv=(base,count,o)=>play(base+(1+Math.floor(Math.random()*count)),o);
@@ -182,8 +182,8 @@ function sndHit(att,def,heavy,blocked,move){const o={pan:panOf(def)};
  if(blocked){if(!pv('block',2,{...o,vol:.75}))SFX.block();return}
  const kick=move==='kick'||move==='akick',up=move==='upper',bl=BLADE.has(att.def.n)&&att.st!=='kick';
  let ok;
- if(kick){ok=pv('kick',5,{...o,vol:.9,rate:heavy?.92:1.05});if(heavy&&Math.random()<.4)pv('kbone',4,{...o,vol:.5})}
- else if(up){ok=pv('hard',10,{...o,vol:.95,rate:.95});if(Math.random()<.4)pv('shat',3,{...o,vol:.5})}
+ if(kick){ok=pv('kick',5,{...o,vol:.9,rate:heavy?.92:1.05});if(heavy&&Math.random()<.4)pv('snap',4,{...o,vol:.5})}
+ else if(up){ok=pv('hard',10,{...o,vol:.95,rate:.95});if(Math.random()<.4)pv('bone',19,{...o,vol:.5})}
  else{ok=heavy?pv('hard',10,{...o,vol:.95}):pv('punch',6,{...o,vol:.85,rate:1+(Math.random()-.5)*.12})}
  if(!ok)heavy?SFX.heavy():SFX.hit();
  if(Math.random()<(heavy?.55:.25)){const D=vox(def);play(pick(D.hurt),{...o,vol:.45,rate:D.rate,delay:.05})}}
@@ -193,7 +193,7 @@ function sndCast(f){const k=f.def.sp&&f.def.sp.k,s=SPSND[k];if(s&&s[0]){const n=
 function sndSpecialHit(att,def){const k=att.def.sp&&att.def.sp.k,s=SPSND[k];if(s&&s[1]){const n=s[1]==='hard'?pvar('hard',10):s[1]==='stab'?pvar('stab',5):s[1];if(play(n,{pan:panOf(def),vol:.85}))return}SFX.heavy()}
 function sndKO(loser){const V=vox(loser);play(V.ko,{vol:.85,rate:V.rate,force:true});if(!play('bodydrop',{vol:.9,delay:.45,force:true}))SFX.ko()}
 function sndWin(w){const V=vox(w);play(V.win,{vol:.7,rate:V.rate,force:true})}
-const FINSFX={slam:'slambarrel',gild:'lava',freeze:'gusts',gore:null,sand:'windstorm',roots:'whispers',split:'unsheathe',toxic:'orccough',palm:'impactsub',zap:'thunder',burn:'fireball',bubble:'watersplash',crystal:null,vortex:'rumble',feathers:'batwings',spirit:'gwhisper',meteor:'explosion',beam:null,steam:null,chains:'chaingate',claws:'knife2',crowbar:null,slices:'unsheathe',bullets:'gunload',chop:'unsheathe',lunarfall:'rumble',molten:'lava',impale:'jstab',well:'watersplash',smother:'breathe'};
+const FINSFX={slam:'slambarrel',gild:'lava',freeze:'gusts',gore:null,sand:'windstorm',roots:'whispers',split:'unsheathe',toxic:'orccough',palm:'impactsub',zap:'thunder',burn:'fireball',bubble:'watersplash',crystal:null,vortex:'rumble',feathers:'batwings',spirit:'gwhisper',meteor:'explosion',beam:null,steam:null,chains:'chaingate',claws:'knife2',crowbar:null,slices:'unsheathe',bullets:null,chop:'unsheathe',lunarfall:'rumble',molten:'lava',impale:'jstab',well:'watersplash',smother:'breathe'};
 function sndGore(big){pv('squelch',14,{vol:.75});pv(big?'bone':'snap',big?19:4,{vol:.85,delay:.03});if(big){pv('goo',6,{vol:.65,delay:.08});pv('splash',4,{vol:.55,delay:.12})}}
 function gunshot(){noise(.09,3200,.7,'highpass');noise(.18,600,.6);tone(160,50,.12,'square',.12)}
 
@@ -846,9 +846,9 @@ const BLOOD=['#5e000c','#7a0010','#8e0614','#a40a1a','#43000a'];
 function bleed(x,y,n,o={}){for(let i=0;i<n;i++){const a=(o.dir!=null?o.dir+(Math.random()-.5)*(o.cone??1.2):Math.random()*TAU),v=(o.v??520)*(.3+Math.random());
  gore.push({x:x+(Math.random()-.5)*(o.w||20),y:y+(Math.random()-.5)*(o.h||20),vx:Math.cos(a)*v,vy:Math.sin(a)*v-(o.up??260),t:0,s:(2+Math.random()*5)*SC*(o.size||1),c:pick(BLOOD)})}}
 function splat(x,s){splats.push({x,s:s*SC*(.6+Math.random()*.8),a:0,c:pick(BLOOD),r:Math.random()*TAU,drops:[...Array(6)].map(()=>[(Math.random()-.5)*2.6,Math.random()*.4+.1])})}
-function impact(p=1){sndGore(p>1.1);if(finish&&finish.loser){const L=finish.loser,X=L.fx||{ox:0,oy:0};lightsPulse.push({x:L.x+X.ox,y:L.y+X.oy-FH*.5,c:'#ffd8b8',t:0,life:.25,r:600*SC,a:.35});for(let i=0;i<14;i++){const an=Math.random()*TAU,v=150+Math.random()*350;aura.push({e:'smoke',x:L.x+X.ox,y:L.y+X.oy-FH*.5,vx:Math.cos(an)*v,vy:Math.sin(an)*v-60,t:0,life:.6,s:(8+Math.random()*10)*SC,c:'#4a4038'})}}cine.punch=Math.min(.55,cine.punch+.22*p);cine.red=Math.min(.3,cine.red+.15*p);timeScale=.28;slowT=Math.max(slowT,.32*p+.1);SFX.thud&&SFX.thud()}
+function impact(p=1){sndGore(p>1.1);if(finish&&finish.loser){const L=finish.loser,X=L.fx||{ox:0,oy:0};lightsPulse.push({x:L.x+X.ox,y:L.y+X.oy-FH*.5,c:'#ffd8b8',t:0,life:.25,r:600*SC,a:.35});for(let i=0;i<14;i++){const an=Math.random()*TAU,v=150+Math.random()*350;aura.push({e:'smoke',x:L.x+X.ox,y:L.y+X.oy-FH*.5,vx:Math.cos(an)*v,vy:Math.sin(an)*v-60,t:0,life:.6,s:(8+Math.random()*10)*SC,c:'#4a4038'})}}cine.punch=Math.min(.18,cine.punch+.12*p);cine.red=Math.min(.3,cine.red+.15*p);timeScale=.28;slowT=Math.max(slowT,.32*p+.1);SFX.thud&&SFX.thud()}
 function cineUpd(dt){if(SND.amb)SND.amb.g.gain.value=SND.amb.vol*(1-.75*cine.k);const run=finish&&finish.run!=null,arm=finish&&finish.armed;
- const T=run?{dim:.58,bars:1,vig:.85,z:1.5,k:1}:arm?{dim:.4,bars:.55,vig:.65,z:1.4,k:.6}:{dim:0,bars:0,vig:0,z:1,k:0};
+ const T=run?{dim:.58,bars:1,vig:.85,z:1.08,k:1}:arm?{dim:.4,bars:.55,vig:.65,z:1.12,k:.6}:{dim:0,bars:0,vig:0,z:1,k:0};
  const e=1-Math.pow(.004,dt);for(const k of ['dim','bars','vig','k'])cine[k]+=(T[k]-cine[k])*e;cine.z+=(T.z-cine.z)*(1-Math.pow(.05,dt));
  cine.punch*=Math.pow(.08,dt);cine.red*=Math.pow(.05,dt);cine.lines*=Math.pow(.01,dt);
  if(run||arm){cine.beat-=dt;if(cine.beat<=0){cine.beat=run?.55:.85;heart()}}
