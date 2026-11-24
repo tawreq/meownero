@@ -27,7 +27,17 @@ a{color:inherit}
 .stage{max-width:1280px;margin:0 auto;padding:0 max(8px,env(safe-area-inset-left)) 0 max(8px,env(safe-area-inset-right));position:relative}
 .screen{position:relative;width:100%;aspect-ratio:16/9;background:#000;border:3px solid #000;border-radius:10px;overflow:hidden;box-shadow:0 0 0 2px var(--line)}
 canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-webkit-user-select:none}
-.mute{position:absolute;bottom:10px;right:10px;z-index:3;background:rgba(0,0,0,.55);color:#fff;border:2px solid rgba(255,255,255,.25);border-radius:8px;font-family:"DM Mono",monospace;font-size:13px;padding:6px 9px;cursor:pointer;min-height:36px}
+.btns{position:absolute;bottom:10px;right:10px;z-index:3;display:flex;gap:8px}
+.mute,.fsbtn{background:rgba(0,0,0,.55);color:#fff;border:2px solid rgba(255,255,255,.25);border-radius:8px;font-family:"DM Mono",monospace;font-size:13px;padding:6px 9px;cursor:pointer;min-height:36px}
+/* fullscreen */
+.stage.fs{position:fixed;inset:0;z-index:50;max-width:none;margin:0;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);background:#000;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.stage.fs .screen{width:min(100vw,calc(100vh * 16 / 9));width:min(100vw,calc(100dvh * 16 / 9));border:0;border-radius:0;box-shadow:none}
+.stage.fs .rotate{display:none}
+.stage.fs .pad{position:absolute;left:0;right:0;bottom:max(10px,env(safe-area-inset-bottom));margin:0;padding:0 max(14px,env(safe-area-inset-left)) 0 max(14px,env(safe-area-inset-right));pointer-events:none;z-index:4}
+.stage.fs .pad .grp{pointer-events:auto;opacity:.78}
+.stage.fs .pad button{background:rgba(27,26,33,.6)}
+@media (pointer:coarse){.stage.fs .btns{top:10px;bottom:auto}}
+body.fs-lock{overflow:hidden}
 .pad{display:none;justify-content:space-between;align-items:flex-end;gap:10px;margin-top:10px;user-select:none;-webkit-user-select:none;touch-action:none}
 .pad .grp{display:grid;gap:8px}
 .pad .dir{grid-template-columns:repeat(3,58px);grid-template-rows:repeat(2,58px)}
@@ -52,7 +62,10 @@ canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-
 <main class="stage">
   <div class="screen">
     <canvas id="c" width="1280" height="720" aria-label="MEOWRTAL KOMBAT game">Your browser can't run the game.</canvas>
-    <button class="mute" id="mute" type="button" aria-pressed="false">SOUND ON</button>
+    <div class="btns">
+      <button class="fsbtn" id="fsbtn" type="button" aria-pressed="false" title="Fullscreen (F)">⛶ FULLSCREEN</button>
+      <button class="mute" id="mute" type="button" aria-pressed="false">SOUND ON</button>
+    </div>
   </div>
   <p class="rotate">Turn your phone sideways for a bigger arena.</p>
   <div class="pad" id="pad" aria-label="Touch controls">
@@ -77,7 +90,42 @@ canvas{display:block;width:100%;height:100%;touch-action:none;user-select:none;-
   <span><kbd>L</kbd> special</span>
   <span><kbd>Enter</kbd> select</span>
   <span><kbd>Esc</kbd> back to select</span>
+  <span><kbd>F</kbd> fullscreen</span>
 </div>
 <script src="/kombat/game.js?v=36"></script>
+<script>
+(() => {
+  const stage = document.querySelector(".stage"), btn = document.getElementById("fsbtn");
+  const native = !!(stage.requestFullscreen || stage.webkitRequestFullscreen);
+  const fsEl = () => document.fullscreenElement || document.webkitFullscreenElement;
+  function sync(on) {
+    stage.classList.toggle("fs", on);
+    document.body.classList.toggle("fs-lock", on);
+    btn.textContent = on ? "✕ EXIT" : "⛶ FULLSCREEN";
+    btn.setAttribute("aria-pressed", on);
+  }
+  async function enter() {
+    if (native) {
+      try {
+        await (stage.requestFullscreen ? stage.requestFullscreen({navigationUI: "hide"}) : stage.webkitRequestFullscreen());
+        try { await screen.orientation.lock("landscape"); } catch (e) {}
+        return;
+      } catch (e) {}
+    }
+    sync(true); scrollTo(0, 0);  // iPhone: no real fullscreen, fill the window instead
+  }
+  function exit() {
+    if (fsEl()) (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+    else sync(false);
+  }
+  const toggle = () => (fsEl() || stage.classList.contains("fs")) ? exit() : enter();
+  btn.addEventListener("click", e => { e.stopPropagation(); toggle(); btn.blur(); });
+  document.addEventListener("fullscreenchange", () => sync(!!fsEl()));
+  document.addEventListener("webkitfullscreenchange", () => sync(!!fsEl()));
+  addEventListener("keydown", e => {
+    if (e.code === "KeyF" && !e.repeat && !e.ctrlKey && !e.metaKey && !e.altKey) { e.preventDefault(); toggle(); }
+  });
+})();
+</script>
 </body>
 </html>
