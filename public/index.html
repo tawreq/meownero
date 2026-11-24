@@ -683,5 +683,40 @@ document.fonts.load('46px "Dela Gothic One"', "ミ").then(() => { for (const k i
 })();
 </script>
 
+<script>
+/* Secret: Up Up Down Left Right (keys or swipes) opens MEOWRTAL KOMBAT */
+(() => {
+  const CODE = ["up","up","down","left","right"];
+  let pos = 0, fired = false;
+  const KEYS = {ArrowUp:"up",ArrowDown:"down",ArrowLeft:"left",ArrowRight:"right",KeyW:"up",KeyS:"down",KeyA:"left",KeyD:"right"};
+  function input(dir){
+    if (fired) return;
+    pos = dir === CODE[pos] ? pos + 1 : (dir === CODE[0] ? 1 : 0);
+    if (pos === CODE.length) unlock();
+  }
+  function unlock(){
+    fired = true;
+    const o = document.createElement("div");
+    o.style.cssText = "position:fixed;inset:0;z-index:99999;background:#000;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .35s";
+    o.innerHTML = '<img src="/kombat/logo.webp" alt="MEOWRTAL KOMBAT" style="width:min(80vw,720px);transform:scale(.6);transition:transform .7s cubic-bezier(.2,1.6,.4,1)">';
+    document.body.appendChild(o);
+    requestAnimationFrame(() => { o.style.opacity = 1; o.firstChild.style.transform = "scale(1)"; });
+    setTimeout(() => { location.href = "/kombat/"; }, 1100);
+  }
+  addEventListener("keydown", e => {
+    const t = e.target;
+    if (t && (t.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName))) return;
+    const d = KEYS[e.code];
+    if (d) input(d); else pos = 0;
+  });
+  let sx = 0, sy = 0;
+  addEventListener("touchstart", e => { const p = e.changedTouches[0]; sx = p.clientX; sy = p.clientY; }, {passive:true});
+  addEventListener("touchend", e => {
+    const p = e.changedTouches[0], dx = p.clientX - sx, dy = p.clientY - sy;
+    if (Math.max(Math.abs(dx), Math.abs(dy)) < 40) return;
+    input(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "right" : "left") : (dy > 0 ? "down" : "up"));
+  }, {passive:true});
+})();
+</script>
 </body>
 </html>
