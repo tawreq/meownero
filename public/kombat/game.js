@@ -8,7 +8,7 @@ const HZ=455;                  // horizon line on screen
 const LEFT=200,RIGHT=WW-200,FH=430,SC=FH/310;
 const cv=document.getElementById('c'),ctx=cv.getContext('2d');
 ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';
-const V='35';
+const V='36';
 const TAU=Math.PI*2;
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
 const lerp=(a,b,t)=>a+(b-a)*t;
@@ -463,7 +463,7 @@ function litSprite(f,w,h,refl,img){img=img||IMG.body[f.def.n];const s=Math.min(2
   lightSprite(f,w,h,cw,ch);tg.globalCompositeOperation='source-atop';
   if(f.stunT>0){tg.globalAlpha=.28;tg.fillStyle=f.stunC;tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
   if(f.fx&&f.fx.tintA>0){tg.globalAlpha=f.fx.tintA;tg.fillStyle=f.fx.tint;tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
-  if(f.flash>0){tg.fillStyle=`rgba(255,255,255,${Math.min(.45,f.flash*3)})`;tg.fillRect(0,0,cw,ch)}
+  if(f.flash>0){tg.fillStyle=`rgba(255,255,255,${Math.min(.28,f.flash*2)})`;tg.fillRect(0,0,cw,ch)}
   if(f.st==='special'||f.st==='dash'){tg.fillStyle=f.def.c;tg.globalAlpha=.05;tg.fillRect(0,0,cw,ch);tg.globalAlpha=1}
  }else{tg.fillStyle='rgba(20,18,26,.35)';tg.fillRect(0,0,cw,ch)}
  tg.globalCompositeOperation='source-over';return{cw,ch}}
@@ -520,7 +520,7 @@ function drawFighter(f,t,refl=false){
  ctx.save();
  const sh=f.shake?Math.sin(f.shake*90)*6:0;
  if(refl){ctx.globalAlpha=A.refl;ctx.translate(f.x+p.ox*f.facing,GY+(GY-f.y)+4);ctx.scale(f.facing,-.55)}
- else{if(X&&X.clip){ctx.beginPath();ctx.rect(-99999,-99999,299999,99999+GY+2);ctx.clip()}ctx.translate(f.x+p.ox*f.facing+sh+(X?X.ox:0),f.y+p.oy+(X?X.oy:0));if(X){ctx.rotate(X.rot);ctx.globalAlpha*=X.alpha}if(f.alpha!=null)ctx.globalAlpha*=f.alpha}
+ else{if(X&&X.clip){ctx.beginPath();ctx.rect(-99999,-99999,299999,99999+GY+2);ctx.clip()}ctx.translate(f.x+p.ox*f.facing+sh+(X?X.ox:0),f.y+p.oy+(X?X.oy:0));if(X){ctx.rotate(X.rot);ctx.globalAlpha*=X.alpha}if(f.alpha!=null&&f.st==='dash')ctx.globalAlpha*=f.alpha}
  if(p.pivot==='center'){ctx.translate(0,-h/2);ctx.rotate(p.spin*f.facing);ctx.translate(0,h/2)}else ctx.rotate(p.rot*f.facing);
  if(!refl)ctx.scale(f.facing*p.sx,p.sy);else ctx.scale(p.sx,p.sy);
  if(shiftX)ctx.translate(shiftX,0);
@@ -572,7 +572,7 @@ function drawAura(){ctx.save();ctx.globalCompositeOperation='lighter';
   else{const r=p.s*.45*(1-k*.4);const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,r*2.2);g.addColorStop(0,`rgba(255,255,255,${.9*a})`);g.addColorStop(.35,hexA(p.c,.7*a));g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(p.x-r*2.2,p.y-r*2.2,r*4.4,r*4.4)}}
  ctx.restore()}
 
-function setSt(f,st){f.st=st;f.t=0;f.hitDone=false}
+function setSt(f,st){if(st!=='dash')f.alpha=null;f.st=st;f.t=0;f.hitDone=false}
 const busy=f=>['punch','kick','upper','hit','special','dash','ko','win','dizzy'].includes(f.st);
 
 function spark(x,y,c,n,spd=1){for(let i=0;i<n;i++){const a=Math.random()*TAU,v=(200+Math.random()*520)*spd;sparks.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-140,t:0,life:.3+Math.random()*.35,c,s:2+Math.random()*4})}}
@@ -619,9 +619,9 @@ function specialImpact(o,c,big,att){if(att)sndSpecialHit(att,o);const x=o.x,y=o.
 function gatherLights(dt){lights=[];for(const p of projectiles){if(p.dead||p.light===false||(p.from>p.t+.2&&!p.landed))continue;lights.push({x:p.x,y:p.y,c:p.c,r:(p.lr||460)*SC,a:p.la||.55})}
  for(const L of lightsPulse){L.t+=dt;lights.push({x:L.x,y:L.y,c:L.c,r:L.r,a:L.a*Math.max(0,1-L.t/L.life)})}lightsPulse=lightsPulse.filter(L=>L.t<L.life);
  for(const k of callouts)k.t+=dt;callouts=callouts.filter(k=>k.t<1.3)}
-function lightSprite(f,w,h,cw,ch){if(!lights.length)return;tg.globalCompositeOperation='source-atop';const s=cw/w;
- for(const L of lights){if(L.a<=.01)continue;const dx=(L.x-f.x)*f.facing,dy=L.y-(f.y-h);if(Math.abs(dx)>L.r+w)continue;const u=(dx+w/2)*s,v=dy*s,r=L.r*s;
-  const g=tg.createRadialGradient(u,v,0,u,v,r);g.addColorStop(0,hexA(L.c,.3*L.a));g.addColorStop(.5,hexA(L.c,.1*L.a));g.addColorStop(1,hexA(L.c,0));tg.fillStyle=g;tg.fillRect(0,0,cw,ch)}}
+function lightSprite(f,w,h,cw,ch){if(!lights.length)return;tg.globalCompositeOperation='source-atop';const s=cw/w;let budget=.8;// cap total tint so stacked lights never wash the sprite out
+ for(const L0 of lights){if(L0.a<=.01)continue;if(budget<=.02)break;const la=Math.min(L0.a,budget),L={x:L0.x,y:L0.y,r:L0.r,c:L0.c,a:la};const dx=(L.x-f.x)*f.facing,dy=L.y-(f.y-h);if(Math.abs(dx)>L.r+w)continue;const u=(dx+w/2)*s,v=dy*s,r=L.r*s;
+  budget-=la*.6;const g=tg.createRadialGradient(u,v,0,u,v,r);g.addColorStop(0,hexA(L.c,.3*L.a));g.addColorStop(.5,hexA(L.c,.1*L.a));g.addColorStop(1,hexA(L.c,0));tg.fillStyle=g;tg.fillRect(0,0,cw,ch)}}
 function drawFloorLights(){ctx.save();ctx.globalCompositeOperation='lighter';for(const L of lights){const hgt=Math.max(0,GY-L.y),fall=Math.max(0,1-hgt/700);if(fall<=0)continue;ctx.save();ctx.translate(L.x,GY+2);ctx.scale(1,.24);const r=L.r*.9;const g=ctx.createRadialGradient(0,0,0,0,0,r);g.addColorStop(0,hexA(L.c,.32*L.a*fall));g.addColorStop(1,hexA(L.c,0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,r,0,TAU);ctx.fill();ctx.restore()}ctx.restore()}
 function drawTrails(){ctx.save();ctx.globalCompositeOperation='lighter';for(const p of projectiles){const H=p.hist;if(!H||H.length<2)continue;for(let i=0;i<H.length;i++){const k=i/H.length;glowDot(H[i][0],H[i][1],(10+30*k)*SC,p.c,.45*k)}}ctx.restore()}
 function drawCallouts(){camReset();for(const k of callouts){const left=k.f===P1,a=k.t<.1?k.t/.1:Math.max(0,1-(k.t-.85)/.45),slide=(1-ease(Math.min(1,k.t/.18)))*80*(left?-1:1);const x=(left?36:W-36)+slide,y=152;ctx.save();ctx.globalAlpha=a;
@@ -734,9 +734,9 @@ function superStart(f){const c=f.def.c,o=f===P1?P2:P1,x=f.x,y=f.y-FH*.55;SUPC.t=
  lightsPulse.push({x,y,c,t:0,life:.9,r:1100*SC,a:.55});lightsPulse.push({x,y,c:'#ffffff',t:0,life:.2,r:600*SC,a:.4});
  for(let i=0;i<3;i++)addFx(.9,(k)=>{const kk=Math.min(1,Math.max(0,k*1.25-i*.15));if(kk<=0)return;ctx.globalCompositeOperation='lighter';ctx.strokeStyle=hexA(c,(1-kk)*.9);ctx.shadowColor=c;ctx.shadowBlur=30;ctx.lineWidth=(18-i*4)*(1-kk)+1;ctx.beginPath();ctx.ellipse(x,GY-4,(80+kk*900)*SC,(20+kk*160)*SC,0,0,TAU);ctx.stroke()});
  addFx(.7,(k)=>{ctx.globalCompositeOperation='lighter';for(let i=0;i<18;i++){const an=i/18*TAU+k*1.4,r0=(60+k*240)*SC,r1=r0+(180+300*(1-k))*SC;ctx.strokeStyle=hexA(c,.7*(1-k));ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x+Math.cos(an)*r0,y+Math.sin(an)*r0);ctx.lineTo(x+Math.cos(an)*r1,y+Math.sin(an)*r1);ctx.stroke()}glowDot(x,y,(160+k*200)*SC,c,(1-k)*.9)});
- addFx(1.1,(k)=>{ctx.globalCompositeOperation='lighter';const h=FH*1.4*(1-Math.pow(1-Math.min(1,k*3),3)),w=(60+40*Math.sin(k*40))*SC*(1-k);const g=ctx.createLinearGradient(x-w,0,x+w,0);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,hexA(c,.75*(1-k)));g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x-w,GY-h,w*2,h)});
+ addFx(1.1,(k)=>{ctx.globalCompositeOperation='lighter';const h=FH*1.4*(1-Math.pow(1-Math.min(1,k*3),3)),w=(60+40*Math.sin(k*40))*SC*(1-k);const g=ctx.createLinearGradient(x-w,0,x+w,0);g.addColorStop(0,'rgba(0,0,0,0)');g.addColorStop(.5,hexA(c,.35*(1-k)));g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(x-w,GY-h,w*2,h)});
  for(let i=0;i<40;i++){const an=-Math.random()*Math.PI;aura.push({e:'smoke',x:x+(Math.random()-.5)*80*SC,y:GY-6,vx:Math.cos(an)*(300+Math.random()*500),vy:Math.sin(an)*120,t:0,life:.8+Math.random()*.4,s:(16+Math.random()*16)*SC,c:mixC(c,'#5a4a40',.75)})}
- if(o){o.flash=.08}}
+}
 function superHit(def,att,hy){const c=att.def.c,x=def.x;hitStop=Math.max(hitStop,.16);if(!att._supSlow||att._supSlow<performance.now()){att._supSlow=performance.now()+700;slowT=Math.max(slowT,.55);timeScale=.35;flashScreen=.22}
  cam.shake=Math.min(.9,cam.shake+.35);cine.punch=Math.min(.14,cine.punch+.05);cine.red=Math.min(.5,cine.red+.25);
  play('impactsub',{vol:.8,pan:panOf(def),jit:.1})||SFX.heavy();pv('bone',19,{vol:.55,pan:panOf(def)});
